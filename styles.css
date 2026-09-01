@@ -268,6 +268,16 @@ p {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   padding-bottom: 88px;
+  opacity: 1;
+  translate: 0 0;
+  transition-property: opacity, translate;
+  transition-duration: 180ms;
+  transition-timing-function: var(--ease);
+}
+
+.specimen-grid.is-switching {
+  opacity: 0;
+  translate: 0 -6px;
 }
 
 .specimen-tile {
@@ -289,8 +299,6 @@ p {
   transform: translateY(-2px);
 }
 
-.specimen-tile picture,
-.specimen-poster,
 .specimen-frame {
   position: absolute;
   inset: 0;
@@ -298,49 +306,19 @@ p {
   height: 100%;
 }
 
-.specimen-tile picture {
-  z-index: 0;
-  transition-property: opacity;
-  transition-duration: 220ms;
-  transition-timing-function: var(--ease);
-}
-
-.specimen-poster {
-  display: block;
-  object-fit: cover;
-  outline: 1px solid rgba(255, 255, 255, 0.1);
-  outline-offset: -1px;
-  scale: 1.08;
-  transition-property: scale, opacity, filter;
-  transition-duration: 500ms;
-  transition-timing-function: var(--ease);
-}
-
-.specimen-poster:not(.is-dark-capture) {
-  filter: invert(1) hue-rotate(180deg);
-}
-
-.specimen-tile:hover .specimen-poster {
-  scale: 1.11;
-}
-
 .specimen-frame {
   z-index: 1;
   border: 0;
-  background: var(--surface);
+  background: #151516;
   opacity: 0;
   pointer-events: auto;
-  transition-property: opacity;
-  transition-duration: 220ms;
+  transition-property: opacity, scale, filter;
+  transition-duration: 180ms;
   transition-timing-function: var(--ease);
 }
 
 .specimen-tile.is-live .specimen-frame {
   opacity: 1;
-}
-
-.specimen-tile.is-live picture {
-  opacity: 0;
 }
 
 .tile-link {
@@ -364,8 +342,18 @@ p {
   inset: 0;
   width: 100vw;
   height: 100vh;
-  opacity: 1;
+  background: #07101d;
+  opacity: 0;
   pointer-events: auto;
+  filter: blur(4px);
+  scale: 0.985;
+}
+
+.specimen-frame.is-immersive-fallback.is-immersive-ready,
+.specimen-frame:fullscreen {
+  opacity: 1;
+  filter: blur(0);
+  scale: 1;
 }
 
 html.has-immersive-fallback,

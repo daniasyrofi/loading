@@ -80,6 +80,33 @@
     0 2px 8px rgb(0 0 0 / 22%);
 }
 
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: showcase-page-out 120ms ease-in both;
+}
+
+::view-transition-new(root) {
+  animation: showcase-page-in 200ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes showcase-page-out {
+  to { opacity: 0; }
+}
+
+@keyframes showcase-page-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -4120,6 +4147,16 @@ dialog:focus-visible {
 
 :root[data-embedded="true"] .specimen-section {
   padding: 18px 12px;
+  animation: none;
+}
+
+:root[data-immersive="true"] .specimen-section {
+  animation: immersive-specimen-enter 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes immersive-specimen-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 :root[data-embedded="true"] .specimen-header {
@@ -17848,7 +17885,13 @@ body.has-recording-fallback {
     0 0 0 1px rgb(255 255 255 / 30%),
     0 4px 16px rgb(30 45 70 / 5%);
   backdrop-filter: blur(20px) saturate(1.18);
+  opacity: 1;
+  translate: 0 0;
+  filter: blur(0);
   scale: 1.24;
+  transition-property: opacity, translate, filter;
+  transition-duration: 220ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root[data-theme="dark"] .demo-surface:is(:fullscreen, .is-recording-fallback) .recording-subject {
@@ -17856,6 +17899,37 @@ body.has-recording-fallback {
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 12%),
     0 4px 16px rgb(0 0 0 / 8%);
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-recording-entering .recording-subject {
+  opacity: 0;
+  translate: 0 6px;
+  filter: blur(4px);
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-recording-exiting .recording-subject,
+html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback) .recording-subject {
+  opacity: 0;
+  translate: 0 -6px;
+  filter: blur(4px);
+  transition-duration: 110ms;
+  transition-timing-function: ease-in;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-recording-exiting :is(
+  .recording-toolbar,
+  .showcase-timing,
+  .showcase-navigation
+),
+html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback) :is(
+  .recording-toolbar,
+  .showcase-timing,
+  .showcase-navigation
+) {
+  opacity: 0;
+  transition-property: opacity;
+  transition-duration: 110ms;
+  transition-timing-function: ease-in;
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback) .recording-content-panel {

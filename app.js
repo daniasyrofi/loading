@@ -5,8 +5,6 @@
 
 (() => {
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const darkCaptureIds = new Set(["148", "213", "284"]);
-  const posterlessIds = new Set();
 
   const specimens = new Map([
     ["02", ["Signal Relay", 1]], ["05", ["Orbit Status", 2]], ["06", ["Sweep Track", 3]],
@@ -42,15 +40,88 @@
   if (!grid || !template || !tabs.length) return;
 
   let activeFrame = null;
+  let activeCategory = null;
+  let categoryTransition = 0;
+  let activeFrameLoads = 0;
+  const frameQueue = [];
+  const queuedFrames = new WeakSet();
+  const maxConcurrentFrameLoads = 2;
 
-  const observer = new IntersectionObserver((entries) => {
+  const frameObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) return;
-      const frame = entry.target;
-      if (frame.dataset.src && !frame.getAttribute("src")) frame.src = frame.dataset.src;
-      observer.unobserve(frame);
+      frameObserver.unobserve(entry.target);
+      queueFrame(entry.target);
     });
-  }, { rootMargin: "0px" });
+  }, { rootMargin: "160px 0px", threshold: 0.01 });
+
+  function finishFrameLoad(frame) {
+    if (frame.dataset.loading === "true") {
+      frame.dataset.loading = "false";
+      activeFrameLoads = Math.max(0, activeFrameLoads - 1);
+    }
+    if (frame.isConnected) {
+      frame.dataset.ready = "true";
+      frame.closest(".specimen-tile")?.classList.add("is-live");
+      if (frame === activeFrame && frame.classList.contains("is-immersive-pending")) {
+        frame.contentWindow?.postMessage({ type: "experiment:fullscreen" }, "*");
+      }
+    }
+    pumpFrameQueue();
+  }
+
+  function handleFrameLoad(frame) {
+    let loadedTarget = false;
+    try {
+      const currentUrl = new URL(frame.contentWindow.location.href);
+      const targetUrl = new URL(frame.dataset.src);
+      loadedTarget = currentUrl.pathname === targetUrl.pathname && currentUrl.search === targetUrl.search;
+    } catch {
+      loadedTarget = false;
+    }
+    if (loadedTarget) finishFrameLoad(frame);
+    else frame.addEventListener("load", () => handleFrameLoad(frame), { once: true });
+  }
+
+  function pumpFrameQueue() {
+    while (activeFrameLoads < maxConcurrentFrameLoads && frameQueue.length) {
+      const frame = frameQueue.shift();
+      if (!frame?.isConnected || frame.dataset.loading === "true" || frame.dataset.ready === "true") continue;
+      frame.dataset.loading = "true";
+      activeFrameLoads += 1;
+      frame.addEventListener("load", () => handleFrameLoad(frame), { once: true });
+      frame.removeAttribute("srcdoc");
+      frame.src = frame.dataset.src;
+    }
+  }
+
+  function queueFrame(frame, { priority = false } = {}) {
+    if (!frame || frame.dataset.ready === "true" || frame.dataset.loading === "true") return;
+    if (queuedFrames.has(frame)) {
+      if (priority) {
+        const queuedIndex = frameQueue.indexOf(frame);
+        if (queuedIndex >= 0) frameQueue.splice(queuedIndex, 1);
+        frameQueue.unshift(frame);
+        pumpFrameQueue();
+      }
+      return;
+    }
+    queuedFrames.add(frame);
+    if (priority) frameQueue.unshift(frame);
+    else frameQueue.push(frame);
+    pumpFrameQueue();
+  }
+
+  function disposeGridFrames() {
+    frameObserver.disconnect();
+    frameQueue.length = 0;
+    grid.querySelectorAll(".specimen-frame").forEach((frame) => {
+      if (frame.dataset.loading === "true") {
+        frame.dataset.loading = "false";
+        activeFrameLoads = Math.max(0, activeFrameLoads - 1);
+      }
+    });
+  }
 
   grid.id = "specimen-panel";
   grid.setAttribute("role", "tabpanel");
@@ -75,14 +146,12 @@
     });
   });
 
-  function assetRoots() {
-    return window.location.protocol === "file:"
-      ? { posters: "./posters", detail: "./specimens/index.html" }
-      : { posters: "./posters", detail: "./specimens/" };
+  function detailRoot() {
+    return window.location.protocol === "file:" ? "./specimens/index.html" : "./specimens/";
   }
 
   function specimenUrls(id, display) {
-    const detailUrl = new URL(assetRoots().detail, window.location.href);
+    const detailUrl = new URL(detailRoot(), window.location.href);
     detailUrl.searchParams.set("specimen", id);
     detailUrl.searchParams.set("display", String(display).padStart(2, "0"));
     detailUrl.searchParams.set("theme", "dark");
@@ -97,7 +166,7 @@
   function leaveImmersive() {
     if (!activeFrame) return;
     activeFrame.contentWindow?.postMessage({ type: "experiment:leave-fullscreen" }, "*");
-    activeFrame.classList.remove("is-immersive-fallback");
+    activeFrame.classList.remove("is-immersive-fallback", "is-immersive-pending", "is-immersive-ready");
     document.documentElement.classList.remove("has-immersive-fallback");
     activeFrame = null;
   }
@@ -105,14 +174,11 @@
   function openImmersive(frame) {
     if (!frame) return;
     activeFrame = frame;
+    frame.classList.add("is-immersive-pending");
 
     const start = () => frame.contentWindow?.postMessage({ type: "experiment:fullscreen" }, "*");
-    if (!frame.getAttribute("src") && frame.dataset.src) {
-      frame.addEventListener("load", start, { once: true });
-      frame.src = frame.dataset.src;
-    } else {
-      start();
-    }
+    if (frame.dataset.ready === "true") start();
+    else queueFrame(frame, { priority: true });
 
     if (frame.requestFullscreen) {
       frame.requestFullscreen({ navigationUI: "hide" }).catch(() => {
@@ -130,15 +196,19 @@
   });
 
   window.addEventListener("message", (event) => {
-    if (event.data?.type !== "experiment:exit-fullscreen" || event.source !== activeFrame?.contentWindow) return;
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => leaveImmersive());
-    else leaveImmersive();
+    if (event.source !== activeFrame?.contentWindow) return;
+    if (event.data?.type === "experiment:immersive-ready") {
+      activeFrame.classList.remove("is-immersive-pending");
+      activeFrame.classList.add("is-immersive-ready");
+    } else if (event.data?.type === "experiment:exit-fullscreen") {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => leaveImmersive());
+      else leaveImmersive();
+    }
   });
 
   function render(categoryKey) {
-    observer.disconnect();
+    disposeGridFrames();
     const collection = collections[categoryKey] || collections.indeterminate;
-    const roots = assetRoots();
     const fragment = document.createDocumentFragment();
 
     collection.ids.forEach((id, index) => {
@@ -147,9 +217,6 @@
       const tile = node.querySelector(".specimen-tile");
       const link = node.querySelector(".tile-link");
       const frame = node.querySelector(".specimen-frame");
-      const picture = node.querySelector("picture");
-      const source = node.querySelector(".specimen-webp");
-      const poster = node.querySelector(".specimen-poster");
       const { previewUrl } = specimenUrls(id, display);
 
       tile.style.setProperty("--tile-order", index);
@@ -158,19 +225,6 @@
 
       frame.title = `${title} live loading preview`;
       frame.dataset.src = previewUrl.href;
-      frame.addEventListener("load", () => {
-        if (frame.getAttribute("src")) tile.classList.add("is-live");
-      });
-
-      if (posterlessIds.has(id)) {
-        picture.remove();
-      } else {
-        source.srcset = `${roots.posters}/specimen-${id}.webp`;
-        poster.src = `${roots.posters}/specimen-${id}.png`;
-        poster.alt = `${title} loading experiment`;
-        poster.loading = index < 3 ? "eager" : "lazy";
-        poster.classList.toggle("is-dark-capture", darkCaptureIds.has(id));
-      }
 
       fragment.append(node);
     });
@@ -179,17 +233,33 @@
     grid.setAttribute("aria-label", `${collection.label} specimens`);
     grid.setAttribute("aria-labelledby", `category-tab-${categoryKey}`);
     if (count) count.textContent = String(collection.ids.length);
-    grid.querySelectorAll(".specimen-frame").forEach((frame) => observer.observe(frame));
+    grid.querySelectorAll(".specimen-frame").forEach((frame) => frameObserver.observe(frame));
   }
 
-  function activate(categoryKey) {
+  async function activate(categoryKey) {
+    if (categoryKey === activeCategory) return;
+    const transition = ++categoryTransition;
     tabs.forEach((tab) => {
       const selected = tab.dataset.category === categoryKey;
       tab.classList.toggle("is-active", selected);
       tab.setAttribute("aria-selected", String(selected));
       tab.tabIndex = selected ? 0 : -1;
     });
+
+    if (activeCategory && !reducedMotion) {
+      grid.style.minHeight = `${grid.offsetHeight}px`;
+      grid.classList.add("is-switching");
+      await new Promise((resolve) => window.setTimeout(resolve, 130));
+      if (transition !== categoryTransition) return;
+    }
+
     render(categoryKey);
+    activeCategory = categoryKey;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (transition !== categoryTransition) return;
+      grid.classList.remove("is-switching");
+      window.setTimeout(() => grid.style.removeProperty("min-height"), reducedMotion ? 0 : 220);
+    }));
   }
 
   activate("indeterminate");

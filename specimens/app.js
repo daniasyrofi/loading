@@ -14081,61 +14081,73 @@ function createRecordingBackdropRenderer(surface) {
   const mesh = new THREE.Mesh(geometry, material);
   scene.add(mesh);
 
-  const fieldUniforms = {
-    uTime: uniforms.uTime,
-    uDark: uniforms.uDark,
-    uAspect: uniforms.uAspect,
-    uField: { value: 0 },
-    uCount: { value: RECORDING_FIELD_POINT_COUNT },
-    uSize: { value: 2.2 }
-  };
-  const fieldGeometry = new THREE.BufferGeometry();
-  const fieldIndices = new Float32Array(RECORDING_FIELD_POINT_COUNT);
-  for (let index = 0; index < RECORDING_FIELD_POINT_COUNT; index += 1) fieldIndices[index] = index;
-  fieldGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(RECORDING_FIELD_POINT_COUNT * 3), 3));
-  fieldGeometry.setAttribute("aIndex", new THREE.BufferAttribute(fieldIndices, 1));
-  const fieldMaterial = new THREE.ShaderMaterial({
-    uniforms: fieldUniforms,
-    vertexShader: RECORDING_FIELD_VERTEX_SHADER,
-    fragmentShader: RECORDING_FIELD_FRAGMENT_SHADER,
-    transparent: true,
-    depthTest: false,
-    depthWrite: false,
-    blending: uniforms.uDark.value ? THREE.AdditiveBlending : THREE.NormalBlending
-  });
-  const fieldScene = new THREE.Scene();
-  const fieldPoints = new THREE.Points(fieldGeometry, fieldMaterial);
-  fieldPoints.frustumCulled = false;
-  fieldScene.add(fieldPoints);
+  let field = null;
   let fieldActive = false;
+  const buildField = () => {
+    if (field) return field;
+    const fieldUniforms = {
+      uTime: uniforms.uTime,
+      uDark: uniforms.uDark,
+      uAspect: uniforms.uAspect,
+      uField: { value: 0 },
+      uCount: { value: RECORDING_FIELD_POINT_COUNT },
+      uSize: { value: 2.2 }
+    };
+    const fieldGeometry = new THREE.BufferGeometry();
+    const fieldIndices = new Float32Array(RECORDING_FIELD_POINT_COUNT);
+    for (let index = 0; index < RECORDING_FIELD_POINT_COUNT; index += 1) fieldIndices[index] = index;
+    fieldGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(RECORDING_FIELD_POINT_COUNT * 3), 3));
+    fieldGeometry.setAttribute("aIndex", new THREE.BufferAttribute(fieldIndices, 1));
+    const fieldMaterial = new THREE.ShaderMaterial({
+      uniforms: fieldUniforms,
+      vertexShader: RECORDING_FIELD_VERTEX_SHADER,
+      fragmentShader: RECORDING_FIELD_FRAGMENT_SHADER,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      blending: uniforms.uDark.value ? THREE.AdditiveBlending : THREE.NormalBlending
+    });
+    const fieldScene = new THREE.Scene();
+    const fieldPoints = new THREE.Points(fieldGeometry, fieldMaterial);
+    fieldPoints.frustumCulled = false;
+    fieldScene.add(fieldPoints);
+    field = { uniforms: fieldUniforms, geometry: fieldGeometry, material: fieldMaterial, scene: fieldScene };
+    return field;
+  };
 
-  const streamUniforms = { uTime: uniforms.uTime, uAspect: uniforms.uAspect, uDark: uniforms.uDark };
-  const streamGeometry = new THREE.BufferGeometry();
-  const streamSeeds = new Float32Array(RECORDING_STREAM_SEGMENTS * 2);
-  const streamEnds = new Float32Array(RECORDING_STREAM_SEGMENTS * 2);
-  for (let segment = 0; segment < RECORDING_STREAM_SEGMENTS; segment += 1) {
-    streamSeeds[segment * 2] = segment + 1;
-    streamSeeds[segment * 2 + 1] = segment + 1;
-    streamEnds[segment * 2] = 0;
-    streamEnds[segment * 2 + 1] = 1;
-  }
-  streamGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(RECORDING_STREAM_SEGMENTS * 6), 3));
-  streamGeometry.setAttribute("aSeed", new THREE.BufferAttribute(streamSeeds, 1));
-  streamGeometry.setAttribute("aEnd", new THREE.BufferAttribute(streamEnds, 1));
-  const streamMaterial = new THREE.ShaderMaterial({
-    uniforms: streamUniforms,
-    vertexShader: RECORDING_STREAM_VERTEX_SHADER,
-    fragmentShader: RECORDING_STREAM_FRAGMENT_SHADER,
-    transparent: true,
-    depthTest: false,
-    depthWrite: false,
-    blending: uniforms.uDark.value ? THREE.AdditiveBlending : THREE.NormalBlending
-  });
-  const streamScene = new THREE.Scene();
-  const streamLines = new THREE.LineSegments(streamGeometry, streamMaterial);
-  streamLines.frustumCulled = false;
-  streamScene.add(streamLines);
+  let stream = null;
   let streamActive = false;
+  const buildStream = () => {
+    if (stream) return stream;
+    const streamUniforms = { uTime: uniforms.uTime, uAspect: uniforms.uAspect, uDark: uniforms.uDark };
+    const streamGeometry = new THREE.BufferGeometry();
+    const streamSeeds = new Float32Array(RECORDING_STREAM_SEGMENTS * 2);
+    const streamEnds = new Float32Array(RECORDING_STREAM_SEGMENTS * 2);
+    for (let segment = 0; segment < RECORDING_STREAM_SEGMENTS; segment += 1) {
+      streamSeeds[segment * 2] = segment + 1;
+      streamSeeds[segment * 2 + 1] = segment + 1;
+      streamEnds[segment * 2] = 0;
+      streamEnds[segment * 2 + 1] = 1;
+    }
+    streamGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(RECORDING_STREAM_SEGMENTS * 6), 3));
+    streamGeometry.setAttribute("aSeed", new THREE.BufferAttribute(streamSeeds, 1));
+    streamGeometry.setAttribute("aEnd", new THREE.BufferAttribute(streamEnds, 1));
+    const streamMaterial = new THREE.ShaderMaterial({
+      uniforms: streamUniforms,
+      vertexShader: RECORDING_STREAM_VERTEX_SHADER,
+      fragmentShader: RECORDING_STREAM_FRAGMENT_SHADER,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      blending: uniforms.uDark.value ? THREE.AdditiveBlending : THREE.NormalBlending
+    });
+    const streamScene = new THREE.Scene();
+    const streamLines = new THREE.LineSegments(streamGeometry, streamMaterial);
+    streamLines.frustumCulled = false;
+    streamScene.add(streamLines);
+    stream = { geometry: streamGeometry, material: streamMaterial, scene: streamScene };
+    return stream;
+  };
 
   let diffusion = null;
   let diffusionActive = false;
@@ -14236,7 +14248,7 @@ function createRecordingBackdropRenderer(surface) {
     const targetHeight = Math.round(height * renderer.getPixelRatio());
     if (canvas.width !== targetWidth || canvas.height !== targetHeight) renderer.setSize(width, height, false);
     uniforms.uAspect.value = width / height;
-    fieldUniforms.uSize.value = Math.max(1.8, height / 260) * renderer.getPixelRatio();
+    if (field) field.uniforms.uSize.value = Math.max(1.8, height / 260) * renderer.getPixelRatio();
   };
 
   const renderFrame = (timestamp = performance.now()) => {
@@ -14254,10 +14266,14 @@ function createRecordingBackdropRenderer(surface) {
     if (nextTheme !== currentTheme) {
       currentTheme = nextTheme;
       uniforms.uDark.value = nextTheme;
-      fieldMaterial.blending = nextTheme ? THREE.AdditiveBlending : THREE.NormalBlending;
-      fieldMaterial.needsUpdate = true;
-      streamMaterial.blending = nextTheme ? THREE.AdditiveBlending : THREE.NormalBlending;
-      streamMaterial.needsUpdate = true;
+      if (field) {
+        field.material.blending = nextTheme ? THREE.AdditiveBlending : THREE.NormalBlending;
+        field.material.needsUpdate = true;
+      }
+      if (stream) {
+        stream.material.blending = nextTheme ? THREE.AdditiveBlending : THREE.NormalBlending;
+        stream.material.needsUpdate = true;
+      }
     }
     const speed = parseFloat(surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED) || 1;
     const elapsed = lastTimestamp ? Math.min(0.12, (timestamp - lastTimestamp) * 0.001) : 0;
@@ -14271,13 +14287,13 @@ function createRecordingBackdropRenderer(surface) {
     renderer.render(scene, camera);
     if (streamActive) {
       renderer.autoClear = false;
-      renderer.render(streamScene, camera);
+      renderer.render(stream.scene, camera);
       renderer.autoClear = true;
       return;
     }
     if (!fieldActive) return;
     renderer.autoClear = false;
-    renderer.render(fieldScene, camera);
+    renderer.render(field.scene, camera);
     renderer.autoClear = true;
   };
 
@@ -14341,7 +14357,8 @@ function createRecordingBackdropRenderer(surface) {
         return;
       }
       if (fieldActive) {
-        fieldUniforms.uField.value = field;
+        const fieldRenderer = buildField();
+        fieldRenderer.uniforms.uField.value = field;
         /* milky way, stars and aurora each get their own continuous sky drawn
            underneath; everything else sits on the plain void */
         /* each scene has a continuous layer drawn underneath it; points alone
@@ -14352,6 +14369,7 @@ function createRecordingBackdropRenderer(surface) {
       } else {
         uniforms.uMode.value = streamActive ? 4 : mode;
       }
+      if (streamActive) buildStream();
       start();
       renderFrame();
     },
@@ -14366,10 +14384,10 @@ function createRecordingBackdropRenderer(surface) {
       document.removeEventListener("visibilitychange", handleVisibility);
       geometry.dispose();
       material.dispose();
-      fieldGeometry.dispose();
-      fieldMaterial.dispose();
-      streamGeometry.dispose();
-      streamMaterial.dispose();
+      field?.geometry.dispose();
+      field?.material.dispose();
+      stream?.geometry.dispose();
+      stream?.material.dispose();
       if (diffusion) {
         diffusion.targets.forEach((target) => target.dispose());
         diffusion.stepMaterial.dispose();
@@ -14431,7 +14449,13 @@ function leaveRecordingMode({ restoreTheme = true } = {}) {
   recordingDetachedControls = [];
   activeRecordingBackdropRenderer?.destroy();
   activeRecordingBackdropRenderer = null;
-  surface.classList.remove("is-recording-mode", "is-recording-fallback", "is-recording-idle");
+  surface.classList.remove(
+    "is-recording-mode",
+    "is-recording-fallback",
+    "is-recording-idle",
+    "is-recording-entering",
+    "is-recording-exiting"
+  );
   document.body.classList.remove("has-recording-fallback");
   document.documentElement.dataset.immersive = "false";
   activeRecordingSurface = null;
@@ -14443,8 +14467,8 @@ async function enterRecordingMode(surface) {
   if (activeRecordingSurface && activeRecordingSurface !== surface) leaveRecordingMode();
   activeRecordingSurface = surface;
   document.documentElement.dataset.immersive = "true";
-  surface.dataset.recordingPattern ||= "dither";
-  surface.dataset.recordingSpeed ||= RECORDING_DEFAULT_SPEED;
+  surface.dataset.recordingPattern = requestedRecordingPattern || surface.dataset.recordingPattern || "dither";
+  surface.dataset.recordingSpeed = requestedRecordingSpeed || surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED;
   recordingDetachedControls = Array.from(
     surface.querySelectorAll(
       ".recording-subject .playback-control, .recording-subject .replay-control, .recording-subject .signal-pause, .recording-subject .phase-pause"
@@ -14456,11 +14480,12 @@ async function enterRecordingMode(surface) {
   }));
   recordingDetachedControls.forEach(({ node }) => surface.append(node));
   recordingThemeBefore = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-  surface.classList.add("is-recording-mode");
+  surface.classList.add("is-recording-mode", "is-recording-entering");
   surface.querySelectorAll("[data-recording-theme]").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.recordingTheme === recordingThemeBefore));
   });
   wakeRecordingChrome(surface);
+  syncRecordingBackdropRenderer(surface);
   if (requestedEmbedded) {
     surface.classList.add("is-recording-fallback");
     document.body.classList.add("has-recording-fallback");
@@ -14471,7 +14496,9 @@ async function enterRecordingMode(surface) {
     surface.classList.add("is-recording-fallback");
     document.body.classList.add("has-recording-fallback");
   }
-  syncRecordingBackdropRenderer(surface);
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  surface.classList.remove("is-recording-entering");
+  if (requestedEmbedded) window.parent.postMessage({ type: "experiment:immersive-ready" }, "*");
 }
 
 function createRecordingBackdrop() {
@@ -14844,9 +14871,12 @@ function createRecordingToolbar({ surface, title }) {
       <path d="M6 6l12 12M18 6 6 18"></path>
     </svg>`;
   exitButton.addEventListener("click", async () => {
+    surface.classList.add("is-recording-exiting");
+    if (document.documentElement.dataset.motion !== "reduce") {
+      await new Promise((resolve) => window.setTimeout(resolve, 110));
+    }
     if (requestedEmbedded) {
       window.parent.postMessage({ type: "experiment:exit-fullscreen" }, "*");
-      leaveRecordingMode();
     } else if (document.fullscreenElement) await document.exitFullscreen();
     else leaveRecordingMode();
   });
@@ -14949,6 +14979,27 @@ function createShowcaseControl(className, label, icon) {
 function installShowcaseChrome({ root, item, catalog }) {
   const surface = root.querySelector(".demo-surface");
   if (!surface || !item) return;
+  let navigationPending = false;
+
+  const preserveExperience = (url) => {
+    url.searchParams.set("theme", document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+    if (surface.dataset.recordingPattern) url.searchParams.set("pattern", surface.dataset.recordingPattern);
+    if (requestedGallery === "draft" && surface.dataset.recordingSpeed) {
+      url.searchParams.set("speed", surface.dataset.recordingSpeed);
+    } else {
+      url.searchParams.delete("speed");
+    }
+    return url;
+  };
+
+  const navigateWithContinuity = (url, { replace = false } = {}) => {
+    if (navigationPending) return;
+    navigationPending = true;
+    document.documentElement.classList.add("is-navigation-pending");
+    const navigate = () => window.location[replace ? "replace" : "assign"](url.href);
+    if (document.documentElement.dataset.motion === "reduce") navigate();
+    else window.setTimeout(navigate, 110);
+  };
 
   root.classList.add("is-showcase-detail");
 
@@ -14985,13 +15036,13 @@ function installShowcaseChrome({ root, item, catalog }) {
   timing.append(resetButton);
 
   resetButton.addEventListener("click", () => {
-    const resetUrl = new URL(window.location.href);
+    const resetUrl = preserveExperience(new URL(window.location.href));
     if (document.documentElement.dataset.immersive === "true") {
       resetUrl.searchParams.set("embedded", "true");
       resetUrl.searchParams.set("immersive", "true");
     }
     resetUrl.searchParams.set("reset", String(Date.now()));
-    window.location.replace(resetUrl.href);
+    navigateWithContinuity(resetUrl, { replace: true });
   });
 
   surface.append(timing, primaryActions);
@@ -15012,7 +15063,7 @@ function installShowcaseChrome({ root, item, catalog }) {
       url.searchParams.delete("immersive");
     }
     url.searchParams.delete("reset");
-    return url.href;
+    return preserveExperience(url);
   };
 
   const previous = ordered[(currentIndex - 1 + ordered.length) % ordered.length];
@@ -15022,10 +15073,14 @@ function installShowcaseChrome({ root, item, catalog }) {
 
   const createNavigationLink = (direction, entry, path) => {
     const link = createElement("a", `showcase-navigation__link showcase-navigation__link--${direction}`);
-    link.href = detailUrl(entry);
+    link.href = detailUrl(entry).href;
     link.dataset.label = entry.title;
     link.setAttribute("aria-label", `${direction === "previous" ? "Previous" : "Next"}: ${entry.title}`);
     link.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${path}"></path></svg>`;
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      navigateWithContinuity(detailUrl(entry));
+    });
     return link;
   };
 
@@ -15039,8 +15094,8 @@ function installShowcaseChrome({ root, item, catalog }) {
     if (activeRecordingSurface || event.metaKey || event.ctrlKey || event.altKey) return;
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement) return;
-    if (event.key === "ArrowLeft") window.location.assign(detailUrl(previous));
-    if (event.key === "ArrowRight") window.location.assign(detailUrl(next));
+    if (event.key === "ArrowLeft") navigateWithContinuity(detailUrl(previous));
+    if (event.key === "ArrowRight") navigateWithContinuity(detailUrl(next));
   });
 }
 
@@ -15070,11 +15125,14 @@ function SpecimenSection({
   header.append(indexElement, headingCopy);
 
   const surface = createElement("div", "demo-surface");
-  if (title === "Crystallizing" && requestedGallery === "draft") {
+  if (requestedRecordingPattern) {
+    surface.dataset.recordingPattern = requestedRecordingPattern;
+  } else if (title === "Crystallizing" && requestedGallery === "draft") {
     surface.dataset.recordingPattern = "frost";
   } else if (title === "Robot Solve" && requestedGallery === "draft") {
     surface.dataset.recordingPattern = "reasoning-circuit";
   }
+  if (requestedRecordingSpeed) surface.dataset.recordingSpeed = requestedRecordingSpeed;
   const subject = createElement("div", "recording-subject");
   const contentPanel = createElement("div", "recording-content-panel");
   contentPanel.append(children);
@@ -15359,6 +15417,17 @@ const requestedCopyFailure = experimentParams.get("copyFailure") === "true";
 const requestedEmbedded = experimentParams.get("embedded") === "true";
 const requestedImmersive = experimentParams.get("immersive") === "true";
 const requestedGallery = experimentParams.get("gallery") || "";
+const requestedPattern = experimentParams.get("pattern") || "";
+const requestedSpeed = experimentParams.get("speed") || "";
+const availableRecordingPatterns = new Set(
+  (requestedGallery === "draft" ? RECORDING_PATTERN_ARCHIVE : RECORDING_PATTERN_GROUPS)
+    .flatMap(([, options]) => options.map(([value]) => value))
+);
+const availableRecordingSpeeds = new Set(RECORDING_SPEEDS.map(([value]) => value));
+const requestedRecordingPattern = availableRecordingPatterns.has(requestedPattern) ? requestedPattern : "";
+const requestedRecordingSpeed = requestedGallery === "draft" && availableRecordingSpeeds.has(requestedSpeed)
+  ? requestedSpeed
+  : "";
 document.documentElement.dataset.gallery = requestedGallery || "public";
 if (requestedImmersive) document.documentElement.dataset.immersive = "true";
 const requestedSpecimen = experimentParams.get("specimen")?.padStart(2, "0") ?? null;

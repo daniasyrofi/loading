@@ -52,11 +52,13 @@
 
   <template data-specimen-template>
     <article class="specimen-tile">
-      <picture>
-        <source class="specimen-webp" type="image/webp" />
-        <img class="specimen-poster" alt="" width="1120" height="600" decoding="async" />
-      </picture>
-      <iframe class="specimen-frame" title="" loading="lazy" allow="fullscreen"></iframe>
+      <iframe
+        class="specimen-frame"
+        title=""
+        loading="eager"
+        allow="fullscreen"
+        srcdoc="<style>html,body{min-height:100%;margin:0;background:#151516}</style>"
+      ></iframe>
       <button class="tile-link" type="button">
         <span class="tile-action" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
