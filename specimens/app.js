@@ -14671,12 +14671,115 @@ const RECORDING_PATTERN_ARCHIVE = [
 const RECORDING_PATTERN_GROUPS = [["Fullscreen background", [
   ["dither", "Dither"],
   ["corona", "Corona"],
-  ["reasoning-circuit", "Reasoning Circuit"],
   ["echo-halo", "Echo Halo"],
   ["pixel-tide", "Pixel Tide"],
-  ["signal-bloom", "Signal Bloom"],
-  ["sunflowers", "Sunflower"]
+  ["signal-bloom", "Signal Bloom"]
 ]]];
+
+let recordingDropdownId = 0;
+
+function createRecordingDropdown({ label, groups, value, onChange, className = "" }) {
+  const root = createElement("div", `recording-pattern-switch recording-select ${className}`.trim());
+  const trigger = createElement("button", "recording-select-trigger");
+  const menu = createElement("div", "recording-select-menu");
+  const menuId = `recording-select-${++recordingDropdownId}`;
+  const options = [];
+
+  trigger.type = "button";
+  trigger.setAttribute("aria-label", label);
+  trigger.setAttribute("aria-haspopup", "listbox");
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.setAttribute("aria-controls", menuId);
+  trigger.innerHTML = `<span class="recording-select-trigger__value"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m6 9.5 6 6 6-6"></path>
+    </svg>`;
+
+  menu.id = menuId;
+  menu.setAttribute("role", "listbox");
+  menu.setAttribute("aria-label", label);
+  menu.hidden = true;
+
+  groups.forEach(([groupLabel, groupOptions]) => {
+    if (groups.length > 1) {
+      const heading = createElement("div", "recording-select-group-label", groupLabel);
+      menu.append(heading);
+    }
+    groupOptions.forEach(([optionValue, optionLabel]) => {
+      const option = createElement("button", "recording-select-option");
+      option.type = "button";
+      option.setAttribute("role", "option");
+      option.dataset.value = optionValue;
+      option.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m5 12 4 4L19 6"></path>
+        </svg><span>${optionLabel}</span>`;
+      options.push(option);
+      menu.append(option);
+    });
+  });
+
+  const close = ({ restoreFocus = false } = {}) => {
+    root.classList.remove("is-open");
+    trigger.setAttribute("aria-expanded", "false");
+    menu.hidden = true;
+    if (restoreFocus) trigger.focus();
+  };
+  const open = () => {
+    document.querySelectorAll(".recording-select.is-open").forEach((select) => {
+      if (select !== root) select.querySelector(".recording-select-trigger")?.click();
+    });
+    root.classList.add("is-open");
+    trigger.setAttribute("aria-expanded", "true");
+    menu.hidden = false;
+  };
+  const setValue = (nextValue, { emit = false } = {}) => {
+    const selected = options.find((option) => option.dataset.value === nextValue) || options[0];
+    if (!selected) return;
+    root.dataset.value = selected.dataset.value;
+    trigger.querySelector(".recording-select-trigger__value").textContent = selected.textContent.trim();
+    options.forEach((option) => option.setAttribute("aria-selected", String(option === selected)));
+    if (emit) onChange?.(selected.dataset.value);
+  };
+
+  trigger.addEventListener("click", () => {
+    if (root.classList.contains("is-open")) close();
+    else open();
+  });
+  trigger.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+    event.preventDefault();
+    open();
+    const selectedIndex = Math.max(0, options.findIndex((option) => option.getAttribute("aria-selected") === "true"));
+    const offset = event.key === "ArrowDown" ? 1 : -1;
+    options[(selectedIndex + offset + options.length) % options.length]?.focus();
+  });
+  options.forEach((option, index) => {
+    option.addEventListener("click", () => {
+      setValue(option.dataset.value, { emit: true });
+      close({ restoreFocus: true });
+    });
+    option.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close({ restoreFocus: true });
+      } else if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+        event.preventDefault();
+        const nextIndex = event.key === "Home" ? 0
+          : event.key === "End" ? options.length - 1
+            : (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+        options[nextIndex]?.focus();
+      }
+    });
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!root.contains(event.target)) close();
+  });
+
+  root.setRecordingValue = setValue;
+  root.append(trigger, menu);
+  setValue(value);
+  return root;
+}
 
 function createRecordingToolbar({ surface, title }) {
   const toolbar = createElement("div", "recording-toolbar");
@@ -14698,12 +14801,8 @@ function createRecordingToolbar({ surface, title }) {
     themeGroup.append(button);
   });
 
-  const patternGroup = createElement("div", "recording-pattern-switch");
-  const patternSelect = createElement("select", "recording-pattern-select");
-  patternSelect.setAttribute("aria-label", "Recording background theme");
   const isDraftWorkbench = new URLSearchParams(window.location.search).get("gallery") === "draft"
-    || window.location.pathname.includes("/draft")
-    || new Set(["localhost", "127.0.0.1", "::1"]).has(window.location.hostname);
+    || window.location.pathname.includes("/draft");
   const activePatternGroups = isDraftWorkbench ? RECORDING_PATTERN_ARCHIVE : RECORDING_PATTERN_GROUPS;
   const patternGroups = surface.dataset.recordingPattern === "frost"
     ? activePatternGroups.map(([groupLabel, options]) => [
@@ -14711,52 +14810,29 @@ function createRecordingToolbar({ surface, title }) {
         [...options, ["frost", "Frost"]]
       ])
     : activePatternGroups;
-  patternGroups.forEach(([groupLabel, options]) => {
-    const optionGroup = document.createElement("optgroup");
-    optionGroup.label = groupLabel;
-    options.forEach(([pattern, label]) => {
-      const option = document.createElement("option");
-      option.value = pattern;
-      option.textContent = label;
-      optionGroup.append(option);
-    });
-    patternSelect.append(optionGroup);
+  const patternGroup = createRecordingDropdown({
+    label: "Recording background theme",
+    groups: patternGroups,
+    value: surface.dataset.recordingPattern || "dither",
+    onChange: (pattern) => {
+      surface.dataset.recordingPattern = pattern;
+      syncRecordingBackdropRenderer(surface);
+      wakeRecordingChrome(surface);
+    }
   });
-  patternSelect.value = surface.dataset.recordingPattern || "dither";
-  patternSelect.addEventListener("change", () => {
-    surface.dataset.recordingPattern = patternSelect.value;
-    syncRecordingBackdropRenderer(surface);
-    wakeRecordingChrome(surface);
-  });
-  const speedGroup = createElement("div", "recording-pattern-switch");
-  const speedSelect = createElement("select", "recording-pattern-select recording-speed-select");
-  speedSelect.setAttribute("aria-label", "Backdrop motion speed");
-  RECORDING_SPEEDS.forEach(([value, label]) => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = label;
-    speedSelect.append(option);
-  });
-  speedSelect.value = surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED;
-  speedSelect.addEventListener("change", () => {
-    surface.dataset.recordingSpeed = speedSelect.value;
-    wakeRecordingChrome(surface);
-  });
-  const speedChevron = createElement("span", "recording-pattern-chevron");
-  speedChevron.setAttribute("aria-hidden", "true");
-  speedChevron.innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m6 9.5 6 6 6-6"></path>
-    </svg>`;
-  speedGroup.append(speedSelect, speedChevron);
+  patternGroup.dataset.recordingDropdown = "pattern";
 
-  const patternChevron = createElement("span", "recording-pattern-chevron");
-  patternChevron.setAttribute("aria-hidden", "true");
-  patternChevron.innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m6 9.5 6 6 6-6"></path>
-    </svg>`;
-  patternGroup.append(patternSelect, patternChevron);
+  const speedGroup = createRecordingDropdown({
+    label: "Backdrop motion speed",
+    groups: [["Backdrop speed", RECORDING_SPEEDS]],
+    value: surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED,
+    className: "recording-speed-select",
+    onChange: (speed) => {
+      surface.dataset.recordingSpeed = speed;
+      wakeRecordingChrome(surface);
+    }
+  });
+  speedGroup.dataset.recordingDropdown = "speed";
 
   const exitButton = createElement("button", "recording-exit");
   exitButton.type = "button";
@@ -14908,8 +14984,12 @@ function installShowcaseChrome({ root, item, catalog }) {
 
   resetButton.addEventListener("click", () => {
     const resetUrl = new URL(window.location.href);
+    if (document.documentElement.dataset.immersive === "true") {
+      resetUrl.searchParams.set("embedded", "true");
+      resetUrl.searchParams.set("immersive", "true");
+    }
     resetUrl.searchParams.set("reset", String(Date.now()));
-    window.location.assign(resetUrl.href);
+    window.location.replace(resetUrl.href);
   });
 
   surface.append(timing, primaryActions);
@@ -14990,7 +15070,7 @@ function SpecimenSection({
   const surface = createElement("div", "demo-surface");
   if (title === "Crystallizing" && requestedGallery === "draft") {
     surface.dataset.recordingPattern = "frost";
-  } else if (title === "Robot Solve") {
+  } else if (title === "Robot Solve" && requestedGallery === "draft") {
     surface.dataset.recordingPattern = "reasoning-circuit";
   }
   const subject = createElement("div", "recording-subject");
@@ -15278,6 +15358,7 @@ const requestedEmbedded = experimentParams.get("embedded") === "true";
 const requestedImmersive = experimentParams.get("immersive") === "true";
 const requestedGallery = experimentParams.get("gallery") || "";
 document.documentElement.dataset.gallery = requestedGallery || "public";
+if (requestedImmersive) document.documentElement.dataset.immersive = "true";
 const requestedSpecimen = experimentParams.get("specimen")?.padStart(2, "0") ?? null;
 const requestedDisplay = experimentParams.get("display")?.padStart(2, "0") ?? null;
 const requestedDraftKey = experimentParams.get("draft") ?? "";
@@ -17023,21 +17104,18 @@ window.addEventListener("message", (event) => {
   } else if (type === "experiment:set-pattern" && payload?.pattern) {
     surface.dataset.recordingPattern = payload.pattern;
     activeRecordingBackdropRenderer?.setPattern?.(payload.pattern);
-    const patternSelect = surface.querySelector(".recording-pattern-select");
-    if (patternSelect) patternSelect.value = payload.pattern;
+    surface.querySelector('[data-recording-dropdown="pattern"]')?.setRecordingValue?.(payload.pattern);
   } else if (type === "experiment:next-pattern") {
     const current = surface.dataset.recordingPattern || "dither";
     const isDraft = new URLSearchParams(window.location.search).get("gallery") === "draft"
-      || window.location.pathname.includes("/draft")
-      || new Set(["localhost", "127.0.0.1", "::1"]).has(window.location.hostname);
+      || window.location.pathname.includes("/draft");
     const groups = isDraft ? RECORDING_PATTERN_ARCHIVE : RECORDING_PATTERN_GROUPS;
     const allPatterns = groups.flatMap(([, opts]) => opts.map(([p]) => p));
     const currentIndex = allPatterns.indexOf(current);
     const nextPattern = allPatterns[(currentIndex + 1) % allPatterns.length] || allPatterns[0];
     surface.dataset.recordingPattern = nextPattern;
     activeRecordingBackdropRenderer?.setPattern?.(nextPattern);
-    const patternSelect = surface.querySelector(".recording-pattern-select");
-    if (patternSelect) patternSelect.value = nextPattern;
+    surface.querySelector('[data-recording-dropdown="pattern"]')?.setRecordingValue?.(nextPattern);
   } else if (type === "experiment:next-variant") {
     const variantSelect = surface.querySelector(".variant-selector select") || surface.querySelector(".variant-select");
     if (variantSelect) {
