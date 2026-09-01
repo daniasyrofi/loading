@@ -21,7 +21,7 @@
       <a class="icon-button" href="https://github.com/daniasyrofi/loading" target="_blank" rel="noopener noreferrer" aria-label="View Loading on GitHub">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.75a9.5 9.5 0 0 0-3 18.51c.48.09.65-.2.65-.46v-1.67c-2.67.58-3.23-1.13-3.23-1.13-.44-1.1-1.07-1.4-1.07-1.4-.87-.6.07-.58.07-.58.96.07 1.47.99 1.47.99.86 1.46 2.25 1.04 2.8.8.09-.62.34-1.04.61-1.28-2.13-.24-4.37-1.06-4.37-4.75 0-1.05.38-1.91.99-2.58-.1-.24-.43-1.22.1-2.54 0 0 .8-.26 2.61.98A9.1 9.1 0 0 1 12 7.33a9 9 0 0 1 2.38.32c1.81-1.24 2.61-.98 2.61-.98.53 1.32.2 2.3.1 2.54.62.67.99 1.53.99 2.58 0 3.7-2.25 4.5-4.39 4.74.35.3.65.88.65 1.77v2.5c0 .26.18.56.66.46A9.5 9.5 0 0 0 12 2.75Z" /></svg>
       </a>
-      <a class="icon-button" href="https://x.com/daniasyrofi" target="_blank" rel="noopener noreferrer" aria-label="Dani Asyrofi on X">
+      <a class="icon-button" href="https://x.com/dani_asyrofi" target="_blank" rel="noopener noreferrer" aria-label="Dani Asyrofi on X">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h3.75l3.96 5.3 4.7-5.3H19l-5.55 6.28L19.5 19.5h-3.74l-4.48-6.08-5.38 6.08H4.3l6.24-7.06L5 4.5Zm2.4 1.2 9 12.6h1.7l-9-12.6H7.4Z" /></svg>
       </a>
     </nav>
@@ -36,12 +36,9 @@
 
     <div class="collection-nav">
       <div class="category-tabs" role="tablist" aria-label="Loading categories">
-        <button class="category-tab is-active" type="button" role="tab" aria-selected="true" data-category="indeterminate">Indeterminate activity</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="determinate">Determinate progress</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="systems">System feedback</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="agent">Agent activity</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="physical">Physical process</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="experimental">Experimental</button>
+        <button class="category-tab is-active" type="button" role="tab" aria-selected="true" data-category="indeterminate">Indeterminate</button>
+        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="determinate">Determinate</button>
+        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="processes">Processes</button>
       </div>
     </div>
 
@@ -54,15 +51,18 @@
   </footer>
 
   <template data-specimen-template>
-    <a class="specimen-tile" target="_blank" rel="noopener noreferrer">
+    <article class="specimen-tile">
       <picture>
         <source class="specimen-webp" type="image/webp" />
         <img class="specimen-poster" alt="" width="1120" height="600" decoding="async" />
       </picture>
-      <span class="tile-action" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg>
-      </span>
-    </a>
+      <iframe class="specimen-frame" title="" loading="lazy" allow="fullscreen"></iframe>
+      <button class="tile-link" type="button">
+        <span class="tile-action" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+        </span>
+      </button>
+    </article>
   </template>
 
   <script defer src="./app.js"></script>

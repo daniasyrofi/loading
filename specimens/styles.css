@@ -5295,6 +5295,273 @@ dialog:focus-visible {
   text-align: right;
 }
 
+/* Standalone Loading showcase chrome. */
+.is-showcase-detail .demo-surface {
+  min-height: min(680px, calc(100vh - 176px));
+}
+
+.showcase-timing,
+.showcase-primary-actions {
+  position: absolute;
+  z-index: 6;
+  top: var(--surface-inset);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.showcase-timing {
+  left: var(--surface-inset);
+  min-height: 40px;
+  padding: 3px 11px 3px 3px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: var(--shadow-control);
+  backdrop-filter: blur(16px) saturate(1.1);
+}
+
+.showcase-primary-actions {
+  right: var(--surface-inset);
+}
+
+.showcase-control,
+.showcase-primary-actions :is(.playback-control, .signal-pause, .phase-pause, .specimen-action) {
+  position: relative;
+  inset: auto;
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: var(--shadow-control);
+  color: var(--ink-secondary);
+  cursor: pointer;
+  backdrop-filter: blur(16px) saturate(1.1);
+  transition-property: color, background-color, box-shadow, scale;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.showcase-timing .showcase-reset {
+  box-shadow: none;
+  background: transparent;
+}
+
+.showcase-control:hover,
+.showcase-primary-actions :is(.playback-control, .signal-pause, .phase-pause, .specimen-action):hover {
+  background-color: var(--hover);
+  color: var(--ink);
+}
+
+.showcase-control:active,
+.showcase-primary-actions :is(.playback-control, .signal-pause, .phase-pause, .specimen-action):active,
+.showcase-navigation__link:active {
+  scale: 0.96;
+}
+
+.showcase-control:focus-visible,
+.showcase-primary-actions :is(.playback-control, .signal-pause, .phase-pause, .specimen-action):focus-visible,
+.showcase-navigation__link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.showcase-control svg,
+.showcase-primary-actions svg {
+  width: 16px;
+  height: 16px;
+}
+
+.showcase-timer {
+  min-width: 38px;
+  color: var(--ink-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.is-showcase-detail .demo-surface > .variant-selector {
+  z-index: 6;
+  min-height: 32px;
+  padding: 3px;
+  box-shadow: var(--shadow-control);
+}
+
+.is-showcase-detail .demo-surface > .variant-selector button {
+  min-height: 26px;
+  padding-inline: 10px;
+}
+
+.showcase-navigation {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: none;
+  pointer-events: none;
+}
+
+body:has(.demo-surface:is(:fullscreen, .is-recording-fallback)) .showcase-navigation {
+  display: block;
+}
+
+.showcase-navigation__link {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: var(--shadow-control);
+  color: var(--ink-secondary);
+  text-decoration: none;
+  pointer-events: auto;
+  translate: 0 -50%;
+  backdrop-filter: blur(16px) saturate(1.1);
+  transition-property: color, background-color, box-shadow, scale;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.showcase-navigation__link--previous { left: 18px; }
+.showcase-navigation__link--next { right: 18px; }
+
+.showcase-navigation__link:hover {
+  background-color: var(--hover);
+  color: var(--ink);
+  box-shadow: var(--shadow-panel);
+}
+
+.showcase-navigation__link svg {
+  width: 18px;
+  height: 18px;
+}
+
+.showcase-navigation__link::after {
+  position: absolute;
+  top: calc(100% + 8px);
+  width: max-content;
+  max-width: 180px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgb(18 20 25 / 94%);
+  color: #fff;
+  content: attr(data-label);
+  font-size: 11px;
+  opacity: 0;
+  pointer-events: none;
+  filter: blur(4px);
+  scale: 0.25;
+  transition-property: opacity, filter, scale;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  white-space: nowrap;
+}
+
+.showcase-navigation__link--previous::after { left: 0; }
+.showcase-navigation__link--next::after { right: 0; }
+
+.showcase-navigation__link:is(:hover, :focus-visible)::after {
+  opacity: 1;
+  filter: blur(0);
+  scale: 1;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback) > .showcase-primary-actions {
+  display: contents;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback) > .showcase-primary-actions .specimen-action--fullscreen {
+  display: none;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback) > .showcase-timing {
+  position: fixed;
+  top: max(20px, env(safe-area-inset-top));
+  left: max(20px, env(safe-area-inset-left));
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback) .showcase-pause {
+  left: max(132px, calc(env(safe-area-inset-left) + 132px));
+}
+
+html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
+  .specimen-actions,
+  .replay-control,
+  .progress-reset,
+  .recording-toolbar,
+  .showcase-primary-actions .specimen-action--fullscreen
+) {
+  display: none !important;
+}
+
+html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .showcase-timing {
+  top: 12px;
+  left: 12px;
+  display: flex !important;
+  min-height: 40px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .showcase-timer {
+  display: none;
+}
+
+html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .showcase-primary-actions {
+  top: 12px;
+  right: auto;
+  left: 58px;
+  display: flex !important;
+}
+
+html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .showcase-primary-actions :is(
+  .playback-control,
+  .signal-pause,
+  .phase-pause
+) {
+  display: inline-grid !important;
+}
+
+html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .demo-surface > .variant-selector {
+  display: flex !important;
+}
+
+@media (max-width: 760px) {
+  .is-showcase-detail .specimen-header {
+    margin-top: 54px;
+  }
+
+  .is-showcase-detail .demo-surface {
+    min-height: max(600px, calc(100svh - 220px));
+  }
+
+  .showcase-navigation__link--previous { left: 8px; }
+  .showcase-navigation__link--next { right: 8px; }
+
+  .showcase-navigation__link {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showcase-control,
+  .showcase-primary-actions :is(.playback-control, .signal-pause, .phase-pause, .specimen-action),
+  .showcase-navigation__link,
+  .showcase-navigation__link::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .finite-study__pause { right: 12px; }
 .finite-study__replay { right: 48px; }
 
@@ -5567,8 +5834,7 @@ html:root[data-embedded="true"] body #experiment .demo-surface {
   box-shadow: none;
 }
 
-html:root[data-embedded="true"] body #experiment :is(
-  .variant-selector,
+html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
   .replay-control
 ) {
   display: none;

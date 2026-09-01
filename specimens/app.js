@@ -14433,6 +14433,7 @@ function leaveRecordingMode({ restoreTheme = true } = {}) {
   activeRecordingBackdropRenderer = null;
   surface.classList.remove("is-recording-mode", "is-recording-fallback", "is-recording-idle");
   document.body.classList.remove("has-recording-fallback");
+  document.documentElement.dataset.immersive = "false";
   activeRecordingSurface = null;
   if (restoreTheme && recordingThemeBefore) setExperimentTheme(recordingThemeBefore);
   recordingThemeBefore = null;
@@ -14441,6 +14442,7 @@ function leaveRecordingMode({ restoreTheme = true } = {}) {
 async function enterRecordingMode(surface) {
   if (activeRecordingSurface && activeRecordingSurface !== surface) leaveRecordingMode();
   activeRecordingSurface = surface;
+  document.documentElement.dataset.immersive = "true";
   surface.dataset.recordingPattern ||= "dither";
   surface.dataset.recordingSpeed ||= RECORDING_DEFAULT_SPEED;
   recordingDetachedControls = Array.from(
@@ -14459,7 +14461,10 @@ async function enterRecordingMode(surface) {
     button.setAttribute("aria-pressed", String(button.dataset.recordingTheme === recordingThemeBefore));
   });
   wakeRecordingChrome(surface);
-  try {
+  if (requestedEmbedded) {
+    surface.classList.add("is-recording-fallback");
+    document.body.classList.add("has-recording-fallback");
+  } else try {
     if (surface.requestFullscreen) await surface.requestFullscreen({ navigationUI: "hide" });
     else throw new Error("Fullscreen API unavailable");
   } catch {
@@ -14761,7 +14766,10 @@ function createRecordingToolbar({ surface, title }) {
       <path d="M6 6l12 12M18 6 6 18"></path>
     </svg>`;
   exitButton.addEventListener("click", async () => {
-    if (document.fullscreenElement) await document.exitFullscreen();
+    if (requestedEmbedded) {
+      window.parent.postMessage({ type: "experiment:exit-fullscreen" }, "*");
+      leaveRecordingMode();
+    } else if (document.fullscreenElement) await document.exitFullscreen();
     else leaveRecordingMode();
   });
 
@@ -14850,6 +14858,162 @@ function createSpecimenActions({ title, source, onFullscreen }) {
 
   root.append(copyButton, viewButton, fullscreenButton);
   return root;
+}
+
+function createShowcaseControl(className, label, icon) {
+  const button = createElement("button", `showcase-control ${className}`.trim());
+  button.type = "button";
+  button.setAttribute("aria-label", label);
+  button.innerHTML = icon;
+  return button;
+}
+
+function installShowcaseChrome({ root, item, catalog }) {
+  const surface = root.querySelector(".demo-surface");
+  if (!surface || !item) return;
+
+  root.classList.add("is-showcase-detail");
+
+  const sourceActions = surface.querySelector(":scope > .specimen-actions");
+  let fullscreenButton = sourceActions?.querySelector(".specimen-action--fullscreen");
+  if (!fullscreenButton) {
+    fullscreenButton = createShowcaseControl(
+      "specimen-action specimen-action--fullscreen",
+      `Open ${item.title} in fullscreen`,
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path>
+      </svg>`
+    );
+    fullscreenButton.addEventListener("click", () => enterRecordingMode(surface));
+  }
+  sourceActions?.remove();
+
+  let pauseButton = surface.querySelector(
+    ".recording-subject :is(.playback-control, .signal-pause, .phase-pause)"
+  );
+  let genericPaused = false;
+  if (!pauseButton) {
+    pauseButton = createShowcaseControl(
+      "playback-control showcase-pause",
+      "Pause animation",
+      `<svg class="playback-control__pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+        <path d="M9 5v14M15 5v14"></path>
+      </svg>
+      <svg class="playback-control__play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true">
+        <path d="m8 5 11 7-11 7Z"></path>
+      </svg>`
+    );
+    pauseButton.addEventListener("click", () => {
+      genericPaused = !genericPaused;
+      pauseButton.classList.toggle("is-paused", genericPaused);
+      pauseButton.setAttribute("aria-label", genericPaused ? "Resume animation" : "Pause animation");
+      document.getAnimations().forEach((animation) => {
+        if (genericPaused) animation.pause();
+        else animation.play();
+      });
+    });
+  }
+  pauseButton.classList.add("showcase-pause");
+
+  const primaryActions = createElement("div", "showcase-primary-actions");
+  primaryActions.setAttribute("role", "group");
+  primaryActions.setAttribute("aria-label", "Playback and fullscreen controls");
+  primaryActions.append(pauseButton, fullscreenButton);
+
+  const resetButton = createShowcaseControl(
+    "showcase-reset",
+    "Reset animation and timer",
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20 11a8 8 0 1 0-2.34 5.66"></path><path d="M20 4v7h-7"></path>
+    </svg>`
+  );
+  const timer = createElement("span", "showcase-timer", "0.0s");
+  timer.setAttribute("aria-label", "Elapsed time");
+  const timing = createElement("div", "showcase-timing");
+  timing.append(resetButton, timer);
+
+  let startedAt = performance.now();
+  let pauseStartedAt = null;
+  let pausedDuration = 0;
+  let timerPaused = false;
+
+  const updateTimer = () => {
+    const now = timerPaused && pauseStartedAt !== null ? pauseStartedAt : performance.now();
+    timer.textContent = `${(Math.max(0, now - startedAt - pausedDuration) / 1000).toFixed(1)}s`;
+  };
+
+  const setTimerPaused = (paused) => {
+    if (paused === timerPaused) return;
+    timerPaused = paused;
+    if (timerPaused) pauseStartedAt = performance.now();
+    else if (pauseStartedAt !== null) {
+      pausedDuration += performance.now() - pauseStartedAt;
+      pauseStartedAt = null;
+    }
+    updateTimer();
+  };
+
+  pauseButton.addEventListener("click", () => {
+    window.setTimeout(() => {
+      setTimerPaused(pauseButton.classList.contains("is-paused"));
+    }, 0);
+  });
+
+  resetButton.addEventListener("click", () => {
+    const resetUrl = new URL(window.location.href);
+    resetUrl.searchParams.set("reset", String(Date.now()));
+    window.location.assign(resetUrl.href);
+  });
+
+  window.setInterval(updateTimer, 100);
+  surface.append(timing, primaryActions);
+
+  const ordered = catalog.experiments.filter((entry) => Number(entry.order) <= 23);
+  const currentIndex = ordered.findIndex((entry) => entry.id === item.id);
+  if (currentIndex < 0 || ordered.length < 2) return;
+
+  const detailUrl = (entry) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("specimen", entry.id);
+    url.searchParams.set("display", String(entry.order).padStart(2, "0"));
+    if (requestedEmbedded) {
+      url.searchParams.set("embedded", "true");
+      url.searchParams.set("immersive", "true");
+    } else {
+      url.searchParams.delete("embedded");
+      url.searchParams.delete("immersive");
+    }
+    url.searchParams.delete("reset");
+    return url.href;
+  };
+
+  const previous = ordered[(currentIndex - 1 + ordered.length) % ordered.length];
+  const next = ordered[(currentIndex + 1) % ordered.length];
+  const navigation = createElement("nav", "showcase-navigation");
+  navigation.setAttribute("aria-label", "Browse loading experiments");
+
+  const createNavigationLink = (direction, entry, path) => {
+    const link = createElement("a", `showcase-navigation__link showcase-navigation__link--${direction}`);
+    link.href = detailUrl(entry);
+    link.dataset.label = entry.title;
+    link.setAttribute("aria-label", `${direction === "previous" ? "Previous" : "Next"}: ${entry.title}`);
+    link.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${path}"></path></svg>`;
+    return link;
+  };
+
+  navigation.append(
+    createNavigationLink("previous", previous, "m15 18-6-6 6-6"),
+    createNavigationLink("next", next, "m9 18 6-6-6-6")
+  );
+  surface.append(navigation);
+
+  document.addEventListener("keydown", (event) => {
+    if (activeRecordingSurface || event.metaKey || event.ctrlKey || event.altKey) return;
+    const target = event.target;
+    if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement) return;
+    if (event.key === "ArrowLeft") window.location.assign(detailUrl(previous));
+    if (event.key === "ArrowRight") window.location.assign(detailUrl(next));
+  });
 }
 
 function SpecimenSection({
@@ -15165,6 +15329,7 @@ const requestedResolveDuration = Number(experimentParams.get("resolveDuration") 
 const requestedCountDuration = Number(experimentParams.get("countDuration") || 3200);
 const requestedCopyFailure = experimentParams.get("copyFailure") === "true";
 const requestedEmbedded = experimentParams.get("embedded") === "true";
+const requestedImmersive = experimentParams.get("immersive") === "true";
 const requestedGallery = experimentParams.get("gallery") || "";
 document.documentElement.dataset.gallery = requestedGallery || "public";
 const requestedSpecimen = experimentParams.get("specimen")?.padStart(2, "0") ?? null;
@@ -16258,8 +16423,10 @@ const focusStackSpecimen = SpecimenSection({ index: "35", title: "Z / Focus Stac
   children: focusStack.root, controls: focusStackSelector.root, className: "focus-stack-specimen compact-rhythm-specimen",
   sourceCodeActions: { title: "FocusStack", source: FOCUS_STACK_SOURCE } });
 
-const consensusField = ConsensusField({ variant: "merge", paused: requestedPaused,
-  initialElapsed: Number.isFinite(requestedElapsed) ? requestedElapsed : 0 });
+const consensusField = requestedSpecimen && requestedSpecimen !== "36"
+  ? { root: createElement("div", "consensus-field is-deferred"), setVariant() {}, destroy() {} }
+  : ConsensusField({ variant: "merge", paused: requestedPaused,
+    initialElapsed: Number.isFinite(requestedElapsed) ? requestedElapsed : 0 });
 const consensusFieldSelector = VariantSelector({ variants: Object.keys(CONSENSUS_FIELD_VARIANTS), selected: "merge",
   ariaLabel: "Merge mark variant", onChange: consensusField.setVariant });
 const consensusFieldSpecimen = SpecimenSection({ index: "36", title: "Merge Mark",
@@ -16267,8 +16434,10 @@ const consensusFieldSpecimen = SpecimenSection({ index: "36", title: "Merge Mark
   children: consensusField.root, controls: consensusFieldSelector.root, className: "consensus-field-specimen compact-rhythm-specimen",
   sourceCodeActions: { title: "MergeMark", source: CONSENSUS_FIELD_SOURCE } });
 
-const taskPipeline = TaskPipeline({ variant: "forward", paused: requestedPaused,
-  initialElapsed: Number.isFinite(requestedElapsed) ? requestedElapsed : 0 });
+const taskPipeline = requestedSpecimen && requestedSpecimen !== "37"
+  ? { root: createElement("div", "three-field is-deferred"), setVariant() {}, destroy() {} }
+  : TaskPipeline({ variant: "forward", paused: requestedPaused,
+    initialElapsed: Number.isFinite(requestedElapsed) ? requestedElapsed : 0 });
 const taskPipelineSelector = VariantSelector({ variants: Object.keys(TASK_PIPELINE_VARIANTS), selected: "forward",
   ariaLabel: "Depth relay variant", onChange: taskPipeline.setVariant });
 const taskPipelineSpecimen = SpecimenSection({ index: "37", title: "Depth Relay",
@@ -16817,7 +16986,13 @@ if (!visibleRoots.length) {
   message.append(title, description, link);
   document.querySelector("#experiment")?.append(message);
 } else {
+  if (requestedCatalogItem && visibleRoots[0]) {
+    installShowcaseChrome({ root: visibleRoots[0], item: requestedCatalogItem, catalog });
+  }
   document.querySelector("#experiment")?.append(...visibleRoots);
+  if (requestedImmersive && visibleRoots[0]) {
+    enterRecordingMode(visibleRoots[0].querySelector(".demo-surface"));
+  }
 }
 window.addEventListener("pagehide", () => {
   loadingState.destroy();
@@ -16897,6 +17072,8 @@ window.addEventListener("message", (event) => {
 
   if (type === "experiment:fullscreen") {
     enterRecordingMode(surface);
+  } else if (type === "experiment:leave-fullscreen") {
+    leaveRecordingMode();
   } else if (type === "experiment:set-pattern" && payload?.pattern) {
     surface.dataset.recordingPattern = payload.pattern;
     activeRecordingBackdropRenderer?.setPattern?.(payload.pattern);
