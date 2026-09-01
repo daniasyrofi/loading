@@ -19771,7 +19771,7 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   }
 }
 
-/* Draft 1–22 share one status-row contract in cards and recording fullscreen:
+/* Public showcase rows share one status-row contract in cards and recording fullscreen:
    a bounded icon slot, flexible copy, and a stable tabular timer column. */
 :is(
   .signal-relay-specimen,
@@ -19795,7 +19795,8 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   .coalesce-specimen,
   .gyro-rings-specimen,
   .compact-loading-family-crystallizing-specimen,
-  .head-pitch-specimen
+  .head-pitch-specimen,
+  .kettle-whistle-specimen
 )
   .demo-surface
   :is(
@@ -19836,7 +19837,8 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   .coalesce-specimen,
   .gyro-rings-specimen,
   .compact-loading-family-crystallizing-specimen,
-  .head-pitch-specimen
+  .head-pitch-specimen,
+  .kettle-whistle-specimen
 )
   .demo-surface
   :is(
@@ -19871,7 +19873,8 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   .coalesce-specimen,
   .gyro-rings-specimen,
   .compact-loading-family-crystallizing-specimen,
-  .head-pitch-specimen
+  .head-pitch-specimen,
+  .kettle-whistle-specimen
 )
   .demo-surface
   :is(
