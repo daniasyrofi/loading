@@ -118,6 +118,11 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html:root[data-embedded="true"] {
+  min-width: 0;
+  overflow-x: clip;
+}
+
 body {
   min-height: 100vh;
   margin: 0;

@@ -440,6 +440,11 @@ html.has-immersive-fallback body {
     width: min(calc(100% - 24px), 1100px);
   }
 
+  .specimen-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
   .site-header {
     min-height: 72px;
   }
@@ -501,8 +506,6 @@ html.has-immersive-fallback body {
 
 @media (max-width: 560px) {
   .specimen-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
     padding-bottom: 64px;
   }
 
