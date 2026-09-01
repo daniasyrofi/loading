@@ -1,0 +1,31 @@
+# Netlify configuration for loading.daniasyrofi.com
+
+[build]
+  publish = "."
+
+# Custom Shadcn Registry CORS headers for CLI distribution
+[[headers]]
+  for = "/registry.json"
+  [headers.values]
+    Content-Type = "application/json; charset=utf-8"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, OPTIONS"
+    Cache-Control = "public, max-age=300, s-maxage=3600"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+[[headers]]
+  for = "/styles.css"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/app.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"

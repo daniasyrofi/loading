@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#fafafb" />
+  <title>Interactive Component Experiments</title>
+  <meta name="description" content="Interactive component specimens for motion, search, workflow, and interface states." />
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="detail-back" href="../" aria-label="Back to Loading collection"><span aria-hidden="true">←</span> Loading</a>
+  <main id="experiment" aria-label="Component experiments"></main>
+
+  <dialog class="code-dialog" data-code-dialog aria-labelledby="code-dialog-title">
+    <div class="code-dialog__header">
+      <div>
+        <span class="code-dialog__eyebrow">Component source</span>
+        <h2 id="code-dialog-title">LoadingState</h2>
+      </div>
+      <button class="code-dialog__close" type="button" aria-label="Close code dialog" data-close-dialog>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <pre><code data-code-output></code></pre>
+  </dialog>
+
+  <div class="sr-only" role="status" aria-live="polite" data-copy-status></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

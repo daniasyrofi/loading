@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "experiments": [
+    {
+      "id": "02",
+      "title": "Signal Relay",
+      "description": "Five bars pass activity from left to right.",
+      "order": 1
+    },
+    {
+      "id": "05",
+      "title": "Orbit Status",
+      "description": "Eight dots circle a quiet center.",
+      "order": 2
+    },
+    {
+      "id": "06",
+      "title": "Sweep Track",
+      "description": "A light sweeps across a compact progress track.",
+      "order": 3
+    },
+    {
+      "id": "18",
+      "title": "Beacon Stack",
+      "description": "Five bars rise and fall while work is active.",
+      "order": 4
+    },
+    {
+      "id": "20",
+      "title": "Matrix Trace",
+      "description": "A 3 × 3 grid traces progress across its cells.",
+      "order": 5
+    },
+    {
+      "id": "26",
+      "title": "Cell Merge",
+      "description": "Four cells gather, spread, or alternate.",
+      "order": 6
+    },
+    {
+      "id": "29",
+      "title": "Code Register",
+      "description": "Six blocks shift like a small data register.",
+      "order": 7
+    },
+    {
+      "id": "23",
+      "title": "Band Scan",
+      "description": "Three bands scan vertically through a frame.",
+      "order": 8
+    },
+    {
+      "id": "34",
+      "title": "Lift Queue",
+      "description": "Four blocks move through a vertical queue.",
+      "order": 9
+    },
+    {
+      "id": "64",
+      "title": "Retrieval Fanout",
+      "description": "A query branches to several sources, then gathers the results.",
+      "order": 10
+    },
+    {
+      "id": "49",
+      "title": "Step Trace",
+      "description": "A stepped line marks progress one stage at a time.",
+      "order": 11
+    },
+    {
+      "id": "51",
+      "title": "Hourglass Flip",
+      "description": "An hourglass flips while work continues.",
+      "order": 12
+    },
+    {
+      "id": "56",
+      "title": "Newton Cradle",
+      "description": "Four weights pass motion from one side to the other.",
+      "order": 13
+    },
+    {
+      "id": "60",
+      "title": "Balance Beam",
+      "description": "Two weights move around a steady center.",
+      "order": 14
+    },
+    {
+      "id": "47",
+      "title": "Brainstorm Loop",
+      "description": "A continuous loop connects a sequence of ideas.",
+      "order": 15
+    },
+    {
+      "id": "85",
+      "title": "Battery Charge",
+      "description": "A battery fills, completes, or signals low power.",
+      "order": 16
+    },
+    {
+      "id": "70",
+      "title": "Phyllotaxis",
+      "description": "Dots grow outward along the golden angle.",
+      "order": 17
+    },
+    {
+      "id": "75",
+      "title": "Sonar Sweep",
+      "description": "A rotating sweep reveals each signal in turn.",
+      "order": 18
+    },
+    {
+      "id": "79",
+      "title": "Coalesce",
+      "description": "Three points orbit, merge, and separate again.",
+      "order": 19
+    },
+    {
+      "id": "76",
+      "title": "Gyro Rings",
+      "description": "Three tilted rings turn around a fixed center.",
+      "order": 20
+    },
+    {
+      "id": "148",
+      "title": "Crystallizing",
+      "description": "A familiar freezer snowflake flips edge-on, then returns as a precise six-branch crystal.",
+      "order": 21
+    },
+    {
+      "id": "213",
+      "title": "Robot Solve",
+      "description": "A robot weighs two directions, makes one small correction, and settles when the solution clicks.",
+      "order": 22
+    },
+    {
+      "id": "284",
+      "title": "Kettle Whistle",
+      "description": "An idea simmers under the lid, sends up three soft wisps, then releases a short whistle.",
+      "order": 23
+    },
+    {
+      "id": "78",
+      "title": "Spirograph",
+      "description": "A small circle rolls inside a large one and its pen keeps redrawing the same closed figure.",
+      "order": 24
+    },
+    {
+      "id": "80",
+      "title": "Helix Spin",
+      "description": "Two strands wind around one axis, each turn carrying the other forward.",
+      "order": 25
+    },
+    {
+      "id": "63",
+      "title": "Vortex",
+      "description": "Every mote spirals in toward the core and is reborn at the rim, so the draw never stops.",
+      "order": 26
+    },
+    {
+      "id": "77",
+      "title": "Pendulum Wave",
+      "description": "Six pendulums with six periods drift out of phase, scatter, and resync exactly once per cycle.",
+      "order": 27
+    },
+    {
+      "id": "71",
+      "title": "Field Lines",
+      "description": "Particles move along a simple magnetic field.",
+      "order": 28
+    },
+    {
+      "id": "153",
+      "title": "Jitter Buffer",
+      "description": "Irregular packet arrivals absorbed into a buffer and released at a constant cadence.",
+      "order": 29
+    },
+    {
+      "id": "154",
+      "title": "FEC Repair",
+      "description": "In-flight forward error correction reconstructs missing cells from redundancy without retransmission.",
+      "order": 30
+    },
+    {
+      "id": "155",
+      "title": "Backpressure",
+      "description": "A downstream bottleneck propagates compression waves backward through queued tokens.",
+      "order": 31
+    },
+    {
+      "id": "156",
+      "title": "Work Steal",
+      "description": "Underloaded worker queues steal tasks horizontally from overloaded neighbors.",
+      "order": 32
+    },
+    {
+      "id": "157",
+      "title": "Arbiter",
+      "description": "Exclusive scheduling where aperture pre-contracts and admits requests in non-trivial order.",
+      "order": 33
+    },
+    {
+      "id": "158",
+      "title": "Constraint Relaxation",
+      "description": "Connected graph nodes resolve continuous strain through damped spring relaxation.",
+      "order": 34
+    },
+    {
+      "id": "159",
+      "title": "Phase Lock",
+      "description": "Three coupled oscillators pull each other into phase synchrony before experiencing a phase slip.",
+      "order": 35
+    },
+    {
+      "id": "160",
+      "title": "Coalescer",
+      "description": "Temporally clustered events consolidate into single output pulses while isolated events pass directly.",
+      "order": 36
+    },
+    {
+      "id": "161",
+      "title": "Interleave",
+      "description": "Streams resequence through crossing paths with physical depth occlusion before reconstruction.",
+      "order": 37
+    },
+    {
+      "id": "162",
+      "title": "Window Credit",
+      "description": "Bidirectional capacity flow where forward data narrows receiver window and return credits unlock transmission.",
+      "order": 38
+    },
+    {
+      "id": "163",
+      "title": "ZMP Stabilizer",
+      "description": "Ground reaction force and center of pressure shift to capture divergent motion in bipedal balance.",
+      "order": 39
+    },
+    {
+      "id": "164",
+      "title": "Tendon Antagonist",
+      "description": "Antagonistic flexor and extensor cable tendons equilibrate compliance in a dexterous joint.",
+      "order": 40
+    },
+    {
+      "id": "165",
+      "title": "Tactile Array",
+      "description": "Elastomeric tactile skin tracks normal indentation and tangential shear vectors before slip occurs.",
+      "order": 41
+    },
+    {
+      "id": "166",
+      "title": "Series Elastic Actuator",
+      "description": "Torsional spring deflection between motor rotor and link arm measures torque and damps impact.",
+      "order": 42
+    },
+    {
+      "id": "167",
+      "title": "IK Jacobian",
+      "description": "Inverse kinematics damped least-squares solver smoothly guides tooltip through workspace constraints.",
+      "order": 43
+    },
+    {
+      "id": "168",
+      "title": "Canopy LiDAR",
+      "description": "Stratified laser waveform echoes resolve vertical crown density and biomass flux.",
+      "order": 44
+    },
+    {
+      "id": "169",
+      "title": "Merkle Proof",
+      "description": "Heterogeneous telemetry leaves combine through cryptographic hash pairs into a verifiable root attestation.",
+      "order": 45
+    },
+    {
+      "id": "170",
+      "title": "Sorbent Swing",
+      "description": "Twin adsorption chambers alternate ambient carbon capture and vacuum thermal desorption.",
+      "order": 46
+    },
+    {
+      "id": "171",
+      "title": "Mineral Front",
+      "description": "Dissolved carbon percolates through basalt fractures to nucleate solid calcite crystals.",
+      "order": 47
+    },
+    {
+      "id": "172",
+      "title": "Flux Tower",
+      "description": "High-frequency 3D wind velocity and carbon gas concentration sample in synchrony to compute negative flux sinks.",
+      "order": 48
+    },
+    {
+      "id": "173",
+      "title": "Humanoid Walk",
+      "description": "A familiar biped silhouette alternates arms and legs through a compact, balanced gait cycle.",
+      "order": 49
+    },
+    {
+      "id": "174",
+      "title": "Robot Grasp",
+      "description": "A parallel-jaw robotic gripper aligns, closes around one object, and lifts it.",
+      "order": 50
+    },
+    {
+      "id": "175",
+      "title": "Carbon Capture",
+      "description": "Air particles pass through a filter and consolidate into one captured carbon cell.",
+      "order": 51
+    },
+    {
+      "id": "176",
+      "title": "Carbon Credit",
+      "description": "A project issues one carbon token, verification checks it, and the registry retires it.",
+      "order": 52
+    },
+    {
+      "id": "177",
+      "title": "Humanoid Vision",
+      "description": "A familiar robot face scans, focuses, and tracks a target with its eyes.",
+      "order": 53
+    }
+  ]
+}
