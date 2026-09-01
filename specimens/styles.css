@@ -5514,8 +5514,8 @@ body:has(.demo-surface:is(:fullscreen, .is-recording-fallback)) .showcase-naviga
 
 .demo-surface:is(:fullscreen, .is-recording-fallback) > .showcase-timing {
   position: fixed;
-  top: max(20px, env(safe-area-inset-top));
-  left: max(20px, env(safe-area-inset-left));
+  top: max(var(--recording-chrome-inset), env(safe-area-inset-top));
+  left: max(var(--recording-chrome-inset), env(safe-area-inset-left));
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback) > .showcase-timing .showcase-reset {
@@ -17786,6 +17786,7 @@ html:root[data-embedded="true"] body #experiment .specimen-actions {
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback) {
+  --recording-chrome-inset: 20px;
   --recording-base: #eef2f7;
   --recording-grid: rgb(49 66 92 / 9%);
   --recording-orb-one: rgb(55 91 198 / 38%);
@@ -18738,9 +18739,9 @@ body.has-recording-fallback {
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback) .recording-toolbar {
-  position: absolute;
-  top: max(20px, env(safe-area-inset-top));
-  right: max(20px, env(safe-area-inset-right));
+  position: fixed;
+  top: max(var(--recording-chrome-inset), env(safe-area-inset-top));
+  right: max(var(--recording-chrome-inset), env(safe-area-inset-right));
   bottom: auto;
   left: auto;
   width: fit-content;
@@ -18888,10 +18889,13 @@ body.has-recording-fallback {
 .recording-speed-select .recording-select-menu { min-width: 140px; }
 
 @media (max-width: 820px) {
+  .demo-surface:is(:fullscreen, .is-recording-fallback) {
+    --recording-chrome-inset: 12px;
+  }
+
   .demo-surface:is(:fullscreen, .is-recording-fallback) .recording-toolbar {
-    top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
-    left: max(12px, env(safe-area-inset-left));
+    right: max(var(--recording-chrome-inset), env(safe-area-inset-right));
+    left: max(var(--recording-chrome-inset), env(safe-area-inset-left));
     width: auto;
   }
 

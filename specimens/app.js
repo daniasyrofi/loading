@@ -14822,17 +14822,19 @@ function createRecordingToolbar({ surface, title }) {
   });
   patternGroup.dataset.recordingDropdown = "pattern";
 
-  const speedGroup = createRecordingDropdown({
-    label: "Backdrop motion speed",
-    groups: [["Backdrop speed", RECORDING_SPEEDS]],
-    value: surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED,
-    className: "recording-speed-select",
-    onChange: (speed) => {
-      surface.dataset.recordingSpeed = speed;
-      wakeRecordingChrome(surface);
-    }
-  });
-  speedGroup.dataset.recordingDropdown = "speed";
+  const speedGroup = isDraftWorkbench
+    ? createRecordingDropdown({
+        label: "Backdrop motion speed",
+        groups: [["Backdrop speed", RECORDING_SPEEDS]],
+        value: surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED,
+        className: "recording-speed-select",
+        onChange: (speed) => {
+          surface.dataset.recordingSpeed = speed;
+          wakeRecordingChrome(surface);
+        }
+      })
+    : null;
+  if (speedGroup) speedGroup.dataset.recordingDropdown = "speed";
 
   const exitButton = createElement("button", "recording-exit");
   exitButton.type = "button";
@@ -14849,7 +14851,7 @@ function createRecordingToolbar({ surface, title }) {
     else leaveRecordingMode();
   });
 
-  toolbar.append(patternGroup, speedGroup, themeGroup, exitButton);
+  toolbar.append(patternGroup, ...(speedGroup ? [speedGroup] : []), themeGroup, exitButton);
   surface.addEventListener("pointermove", () => wakeRecordingChrome(surface), { passive: true });
   surface.addEventListener("pointerdown", () => wakeRecordingChrome(surface), { passive: true });
   return toolbar;
