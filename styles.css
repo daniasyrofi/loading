@@ -9,7 +9,7 @@
 :root {
   color-scheme: dark;
   --page: #050505;
-  --surface: #111112;
+  --surface: #0d0d0e;
   --surface-raised: #171719;
   --surface-hover: #1d1d20;
   --ink: #f5f5f5;
@@ -352,7 +352,7 @@ p {
   height: 40px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: 10px;
   background: transparent;
   cursor: pointer;
   text-decoration: none;
@@ -390,14 +390,14 @@ html.has-immersive-fallback body {
   width: 40px;
   height: 40px;
   place-items: center;
-  border-radius: 50%;
-  background: rgba(28, 28, 31, 0.86);
-  box-shadow: var(--shadow-control);
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.13);
   color: var(--ink);
-  opacity: 0;
-  scale: 0.25;
-  filter: blur(4px);
-  backdrop-filter: blur(12px);
+  opacity: 1;
+  scale: 1;
+  filter: blur(0);
+  backdrop-filter: none;
   transition-property: opacity, scale, filter;
   transition-duration: 300ms;
   transition-timing-function: var(--ease);

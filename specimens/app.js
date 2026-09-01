@@ -14888,76 +14888,23 @@ function installShowcaseChrome({ root, item, catalog }) {
   }
   sourceActions?.remove();
 
-  let pauseButton = surface.querySelector(
+  surface.querySelectorAll(
     ".recording-subject :is(.playback-control, .signal-pause, .phase-pause)"
-  );
-  let genericPaused = false;
-  if (!pauseButton) {
-    pauseButton = createShowcaseControl(
-      "playback-control showcase-pause",
-      "Pause animation",
-      `<svg class="playback-control__pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
-        <path d="M9 5v14M15 5v14"></path>
-      </svg>
-      <svg class="playback-control__play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true">
-        <path d="m8 5 11 7-11 7Z"></path>
-      </svg>`
-    );
-    pauseButton.addEventListener("click", () => {
-      genericPaused = !genericPaused;
-      pauseButton.classList.toggle("is-paused", genericPaused);
-      pauseButton.setAttribute("aria-label", genericPaused ? "Resume animation" : "Pause animation");
-      document.getAnimations().forEach((animation) => {
-        if (genericPaused) animation.pause();
-        else animation.play();
-      });
-    });
-  }
-  pauseButton.classList.add("showcase-pause");
+  ).forEach((control) => control.remove());
 
   const primaryActions = createElement("div", "showcase-primary-actions");
-  primaryActions.setAttribute("role", "group");
-  primaryActions.setAttribute("aria-label", "Playback and fullscreen controls");
-  primaryActions.append(pauseButton, fullscreenButton);
+  primaryActions.setAttribute("aria-label", "Fullscreen control");
+  primaryActions.append(fullscreenButton);
 
   const resetButton = createShowcaseControl(
     "showcase-reset",
-    "Reset animation and timer",
+    "Reset animation",
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M20 11a8 8 0 1 0-2.34 5.66"></path><path d="M20 4v7h-7"></path>
     </svg>`
   );
-  const timer = createElement("span", "showcase-timer", "0.0s");
-  timer.setAttribute("aria-label", "Elapsed time");
   const timing = createElement("div", "showcase-timing");
-  timing.append(resetButton, timer);
-
-  let startedAt = performance.now();
-  let pauseStartedAt = null;
-  let pausedDuration = 0;
-  let timerPaused = false;
-
-  const updateTimer = () => {
-    const now = timerPaused && pauseStartedAt !== null ? pauseStartedAt : performance.now();
-    timer.textContent = `${(Math.max(0, now - startedAt - pausedDuration) / 1000).toFixed(1)}s`;
-  };
-
-  const setTimerPaused = (paused) => {
-    if (paused === timerPaused) return;
-    timerPaused = paused;
-    if (timerPaused) pauseStartedAt = performance.now();
-    else if (pauseStartedAt !== null) {
-      pausedDuration += performance.now() - pauseStartedAt;
-      pauseStartedAt = null;
-    }
-    updateTimer();
-  };
-
-  pauseButton.addEventListener("click", () => {
-    window.setTimeout(() => {
-      setTimerPaused(pauseButton.classList.contains("is-paused"));
-    }, 0);
-  });
+  timing.append(resetButton);
 
   resetButton.addEventListener("click", () => {
     const resetUrl = new URL(window.location.href);
@@ -14965,7 +14912,6 @@ function installShowcaseChrome({ root, item, catalog }) {
     window.location.assign(resetUrl.href);
   });
 
-  window.setInterval(updateTimer, 100);
   surface.append(timing, primaryActions);
 
   const ordered = catalog.experiments.filter((entry) => Number(entry.order) <= 23);

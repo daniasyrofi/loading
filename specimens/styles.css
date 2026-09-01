@@ -5295,6 +5295,49 @@ dialog:focus-visible {
   text-align: right;
 }
 
+/* Public showcase refinement: quieter comparison surfaces and a specifically
+   scoped content-sized recording subject. */
+html:root[data-embedded="true"][data-theme="dark"]:not([data-immersive="true"]) .specimen-section {
+  --canvas: #151516;
+  --surface: #1a1a1c;
+  --surface-subtle: #18181a;
+  --inset: #18181a;
+  --field: #1d1d1f;
+  --hover: #202022;
+  --line: #242426;
+  --line-strong: #343438;
+}
+
+.is-showcase-detail
+  .demo-surface:is(:fullscreen, .is-recording-fallback)
+  .recording-subject
+  :is(
+    .signal-relay__row,
+    .orbit-status__row,
+    .sweep-track__row,
+    .rhythm-status__row,
+    .compact-loading-family
+  ) {
+  width: max-content;
+  grid-template-columns: max-content max-content max-content;
+  column-gap: 10px;
+}
+
+.is-showcase-detail
+  .demo-surface:is(:fullscreen, .is-recording-fallback)
+  .recording-subject
+  :is(
+    .signal-relay__row,
+    .orbit-status__row,
+    .sweep-track__row,
+    .rhythm-status__row,
+    .compact-loading-family
+  ) > * {
+  width: max-content;
+  min-width: 0;
+  justify-self: start;
+}
+
 /* Standalone Loading showcase chrome. */
 .is-showcase-detail .demo-surface {
   min-height: min(680px, calc(100vh - 176px));
@@ -5313,11 +5356,8 @@ dialog:focus-visible {
 .showcase-timing {
   left: var(--surface-inset);
   min-height: 40px;
-  padding: 3px 11px 3px 3px;
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  box-shadow: var(--shadow-control);
-  backdrop-filter: blur(16px) saturate(1.1);
+  padding: 0;
+  background: transparent;
 }
 
 .showcase-primary-actions {
@@ -5337,18 +5377,17 @@ dialog:focus-visible {
   padding: 0;
   border: 0;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  box-shadow: var(--shadow-control);
+  background: transparent;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--line-strong) 86%, transparent);
   color: var(--ink-secondary);
   cursor: pointer;
-  backdrop-filter: blur(16px) saturate(1.1);
+  backdrop-filter: none;
   transition-property: color, background-color, box-shadow, scale;
   transition-duration: 160ms;
   transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
 .showcase-timing .showcase-reset {
-  box-shadow: none;
   background: transparent;
 }
 
@@ -5375,14 +5414,6 @@ dialog:focus-visible {
 .showcase-primary-actions svg {
   width: 16px;
   height: 16px;
-}
-
-.showcase-timer {
-  min-width: 38px;
-  color: var(--ink-muted);
-  font-size: 11.5px;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
 }
 
 .is-showcase-detail .demo-surface > .variant-selector {
@@ -5416,9 +5447,9 @@ body:has(.demo-surface:is(:fullscreen, .is-recording-fallback)) .showcase-naviga
   width: 44px;
   height: 44px;
   place-items: center;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  box-shadow: var(--shadow-control);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 28%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--line-strong) 86%, transparent);
   color: var(--ink-secondary);
   text-decoration: none;
   pointer-events: auto;
@@ -5487,10 +5518,6 @@ body:has(.demo-surface:is(:fullscreen, .is-recording-fallback)) .showcase-naviga
   left: max(20px, env(safe-area-inset-left));
 }
 
-.demo-surface:is(:fullscreen, .is-recording-fallback) .showcase-pause {
-  left: max(132px, calc(env(safe-area-inset-left) + 132px));
-}
-
 html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
   .specimen-actions,
   .replay-control,
@@ -5510,25 +5537,6 @@ html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .s
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
-}
-
-html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .showcase-timer {
-  display: none;
-}
-
-html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .showcase-primary-actions {
-  top: 12px;
-  right: auto;
-  left: 58px;
-  display: flex !important;
-}
-
-html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .showcase-primary-actions :is(
-  .playback-control,
-  .signal-pause,
-  .phase-pause
-) {
-  display: inline-grid !important;
 }
 
 html:root[data-embedded="true"]:not([data-immersive="true"]) body #experiment .demo-surface > .variant-selector {
