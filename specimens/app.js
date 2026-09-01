@@ -1132,10 +1132,11 @@ function ElapsedTimer({ initialElapsed = 0, paused = false } = {}) {
   let elapsedBeforeStart = Math.max(0, initialElapsed * 1000);
   let startedAt = performance.now();
   let isPaused = Boolean(paused);
+  let isVisible = false;
   let intervalId = 0;
 
   const elapsedNow = () => (
-    isPaused ? elapsedBeforeStart : elapsedBeforeStart + performance.now() - startedAt
+    isPaused || !isVisible ? elapsedBeforeStart : elapsedBeforeStart + performance.now() - startedAt
   );
 
   const render = () => {
@@ -1143,7 +1144,7 @@ function ElapsedTimer({ initialElapsed = 0, paused = false } = {}) {
   };
 
   const startInterval = () => {
-    if (intervalId || isPaused) return;
+    if (intervalId || isPaused || !isVisible) return;
     startedAt = performance.now();
     intervalId = window.setInterval(render, 100);
   };
@@ -1170,6 +1171,26 @@ function ElapsedTimer({ initialElapsed = 0, paused = false } = {}) {
     render();
   }
 
+  const visibilityObserver = "IntersectionObserver" in window
+    ? new IntersectionObserver((entries) => {
+        const nextVisible = entries.some((entry) => entry.isIntersecting);
+        if (nextVisible === isVisible) return;
+        if (!nextVisible) {
+          elapsedBeforeStart = elapsedNow();
+          isVisible = false;
+          stopInterval();
+        } else {
+          isVisible = true;
+          startedAt = performance.now();
+          startInterval();
+        }
+        render();
+      }, { threshold: 0.01 })
+    : null;
+
+  if (visibilityObserver) visibilityObserver.observe(root);
+  else isVisible = true;
+
   function reset(nextElapsed = 0) {
     elapsedBeforeStart = Math.max(0, Number(nextElapsed) || 0) * 1000;
     startedAt = performance.now();
@@ -1178,6 +1199,7 @@ function ElapsedTimer({ initialElapsed = 0, paused = false } = {}) {
 
   function destroy() {
     stopInterval();
+    visibilityObserver?.disconnect();
   }
 
   render();
@@ -14416,6 +14438,7 @@ let activeRecordingSurface = null;
 let recordingThemeBefore = null;
 let recordingChromeTimer = 0;
 let recordingDetachedControls = [];
+let restoreShowcaseContent = null;
 
 function setExperimentTheme(theme) {
   const normalized = theme === "dark" ? "dark" : "light";
@@ -14442,6 +14465,7 @@ function leaveRecordingMode({ restoreTheme = true } = {}) {
   const surface = activeRecordingSurface;
   if (!surface) return;
   window.clearTimeout(recordingChromeTimer);
+  restoreShowcaseContent?.({ updateHistory: true });
   recordingDetachedControls.forEach(({ node, parent, nextSibling }) => {
     if (nextSibling?.parentNode === parent) parent.insertBefore(node, nextSibling);
     else parent.append(node);
@@ -14980,6 +15004,7 @@ function installShowcaseChrome({ root, item, catalog }) {
   const surface = root.querySelector(".demo-surface");
   if (!surface || !item) return;
   let navigationPending = false;
+  let contentSwapPending = false;
 
   const preserveExperience = (url) => {
     url.searchParams.set("theme", document.documentElement.dataset.theme === "dark" ? "dark" : "light");
@@ -15048,8 +15073,38 @@ function installShowcaseChrome({ root, item, catalog }) {
   surface.append(timing, primaryActions);
 
   const ordered = catalog.experiments.filter((entry) => Number(entry.order) <= 23);
-  const currentIndex = ordered.findIndex((entry) => entry.id === item.id);
+  let currentIndex = ordered.findIndex((entry) => entry.id === item.id);
   if (currentIndex < 0 || ordered.length < 2) return;
+
+  const initialIndex = currentIndex;
+  const subject = surface.querySelector(":scope > .recording-subject");
+  const specimenRecords = new Map(ordered.map((entry) => {
+    const entryRoot = rootById.get(entry.id);
+    const entrySurface = entryRoot?.querySelector(":scope > .demo-surface");
+    return [entry.id, {
+      root: entryRoot,
+      className: Array.from(entryRoot?.classList || []).filter((name) => name !== "is-showcase-detail").join(" "),
+      panel: entrySurface?.querySelector(":scope > .recording-subject > .recording-content-panel"),
+      variantSelector: entrySurface?.querySelector(":scope > .variant-selector"),
+      stash: document.createDocumentFragment()
+    }];
+  }));
+
+  const removeEmbeddedControls = (panel) => {
+    panel?.querySelectorAll(
+      ".playback-control, .replay-control, .progress-reset, .signal-pause, .phase-pause"
+    ).forEach((control) => control.remove());
+  };
+
+  const updateSpecimenMetadata = (entry, record) => {
+    root.className = `${record.className} is-showcase-detail`.trim();
+    root.querySelector(".specimen-index").textContent = String(entry.order).padStart(2, "0");
+    root.querySelector(".specimen-title").textContent = entry.title;
+    root.querySelector(".specimen-description").textContent = entry.description;
+    fullscreenButton.setAttribute("aria-label", `Open ${entry.title} in fullscreen`);
+    surface.querySelector(":scope > .recording-toolbar")
+      ?.setAttribute("aria-label", `${entry.title} recording controls`);
+  };
 
   const detailUrl = (entry) => {
     const url = new URL(window.location.href);
@@ -15066,36 +15121,109 @@ function installShowcaseChrome({ root, item, catalog }) {
     return preserveExperience(url);
   };
 
-  const previous = ordered[(currentIndex - 1 + ordered.length) % ordered.length];
-  const next = ordered[(currentIndex + 1) % ordered.length];
   const navigation = createElement("nav", "showcase-navigation");
   navigation.setAttribute("aria-label", "Browse loading experiments");
 
-  const createNavigationLink = (direction, entry, path) => {
+  const createNavigationLink = (direction, path) => {
     const link = createElement("a", `showcase-navigation__link showcase-navigation__link--${direction}`);
-    link.href = detailUrl(entry).href;
-    link.dataset.label = entry.title;
-    link.setAttribute("aria-label", `${direction === "previous" ? "Previous" : "Next"}: ${entry.title}`);
     link.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${path}"></path></svg>`;
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      navigateWithContinuity(detailUrl(entry));
-    });
     return link;
   };
 
-  navigation.append(
-    createNavigationLink("previous", previous, "m15 18-6-6 6-6"),
-    createNavigationLink("next", next, "m9 18 6-6-6-6")
-  );
+  const previousLink = createNavigationLink("previous", "m15 18-6-6 6-6");
+  const nextLink = createNavigationLink("next", "m9 18 6-6-6-6");
+  navigation.append(previousLink, nextLink);
   surface.append(navigation);
 
+  const updateNavigation = () => {
+    const previous = ordered[(currentIndex - 1 + ordered.length) % ordered.length];
+    const next = ordered[(currentIndex + 1) % ordered.length];
+    [[previousLink, previous, "Previous"], [nextLink, next, "Next"]].forEach(([link, entry, label]) => {
+      link.href = detailUrl(entry).href;
+      link.dataset.label = entry.title;
+      link.setAttribute("aria-label", `${label}: ${entry.title}`);
+    });
+  };
+
+  const commitSpecimen = (nextIndex, { updateHistory = true } = {}) => {
+    const nextEntry = ordered[nextIndex];
+    const currentEntry = ordered[currentIndex];
+    const currentRecord = specimenRecords.get(currentEntry.id);
+    const nextRecord = specimenRecords.get(nextEntry.id);
+    if (!subject || !nextRecord?.panel) return false;
+
+    if (currentRecord?.panel?.parentNode === subject) currentRecord.stash.append(currentRecord.panel);
+    if (currentRecord?.variantSelector?.parentNode === surface) currentRecord.stash.append(currentRecord.variantSelector);
+
+    removeEmbeddedControls(nextRecord.panel);
+    subject.append(nextRecord.panel);
+    if (nextRecord.variantSelector) surface.append(nextRecord.variantSelector);
+
+    currentIndex = nextIndex;
+    updateSpecimenMetadata(nextEntry, nextRecord);
+    updateNavigation();
+    if (updateHistory) window.history.replaceState(window.history.state, "", detailUrl(nextEntry).href);
+    return true;
+  };
+
+  const switchSpecimen = async (offset) => {
+    const nextIndex = (currentIndex + offset + ordered.length) % ordered.length;
+    if (!activeRecordingSurface || activeRecordingSurface !== surface) {
+      navigateWithContinuity(detailUrl(ordered[nextIndex]));
+      return;
+    }
+    if (contentSwapPending) return;
+    contentSwapPending = true;
+    const reduceMotion = document.documentElement.dataset.motion === "reduce"
+      || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    surface.dataset.contentDirection = offset > 0 ? "next" : "previous";
+    surface.querySelectorAll(".recording-select.is-open .recording-select-trigger")
+      .forEach((trigger) => trigger.click());
+    surface.classList.add("is-content-switching-out");
+    if (!reduceMotion) await new Promise((resolve) => window.setTimeout(resolve, 120));
+
+    const didCommit = commitSpecimen(nextIndex);
+    surface.classList.remove("is-content-switching-out");
+    if (didCommit && !reduceMotion) {
+      surface.classList.add("is-content-switching-in");
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      surface.classList.remove("is-content-switching-in");
+      await new Promise((resolve) => window.setTimeout(resolve, 200));
+    }
+    delete surface.dataset.contentDirection;
+    contentSwapPending = false;
+    wakeRecordingChrome(surface);
+  };
+
+  previousLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    switchSpecimen(-1);
+  });
+  nextLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    switchSpecimen(1);
+  });
+  updateNavigation();
+
+  restoreShowcaseContent = ({ updateHistory = false } = {}) => {
+    if (currentIndex !== initialIndex) commitSpecimen(initialIndex, { updateHistory });
+    surface.classList.remove("is-content-switching-out", "is-content-switching-in");
+    delete surface.dataset.contentDirection;
+    contentSwapPending = false;
+  };
+
   document.addEventListener("keydown", (event) => {
-    if (activeRecordingSurface || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (activeRecordingSurface !== surface || event.metaKey || event.ctrlKey || event.altKey) return;
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement) return;
-    if (event.key === "ArrowLeft") navigateWithContinuity(detailUrl(previous));
-    if (event.key === "ArrowRight") navigateWithContinuity(detailUrl(next));
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      switchSpecimen(-1);
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      switchSpecimen(1);
+    }
   });
 }
 
@@ -15433,6 +15561,10 @@ if (requestedImmersive) document.documentElement.dataset.immersive = "true";
 const requestedSpecimen = experimentParams.get("specimen")?.padStart(2, "0") ?? null;
 const requestedDisplay = experimentParams.get("display")?.padStart(2, "0") ?? null;
 const requestedDraftKey = experimentParams.get("draft") ?? "";
+const PUBLIC_SHOWCASE_SPECIMEN_IDS = new Set([
+  "02", "05", "06", "18", "20", "23", "26", "29", "34", "47", "49", "51",
+  "56", "60", "64", "70", "75", "76", "79", "85", "148", "213", "284"
+]);
 const DRAFT_ACCESS_HASH = "cd8dc42c37c946e172c7606749f4aa847cc45e6ade0685e6ebf78817d35add98";
 
 async function validateDraftAccess(key) {
@@ -16886,7 +17018,16 @@ const extendedShapeDefinitions = [
 ];
 
 const extendedShapeSpecimens = extendedShapeDefinitions.map((definition) => {
-  const component = definition.factory({ label: definition.label, variant: definition.initialVariant, paused: requestedPaused, initialElapsed: requestedElapsed });
+  const shouldDefer = requestedSpecimen
+    && requestedSpecimen !== definition.index
+    && !PUBLIC_SHOWCASE_SPECIMEN_IDS.has(definition.index);
+  const component = shouldDefer
+    ? {
+        root: createElement("div", `${definition.componentClass} is-deferred`),
+        setVariant() {},
+        destroy() {}
+      }
+    : definition.factory({ label: definition.label, variant: definition.initialVariant, paused: requestedPaused, initialElapsed: requestedElapsed });
   const numericId = Number(definition.index);
   const hasAuthoredVariants = numericId < 103 || (numericId >= 128 && numericId <= 132) || (numericId >= 152 && numericId <= 286);
   const variantNames = hasAuthoredVariants ? Object.keys(definition.variants) : [definition.initialVariant];
@@ -16914,9 +17055,9 @@ const finiteStudyDefinitions = [
 ];
 
 const finiteStudySpecimens = finiteStudyDefinitions.map((definition) => {
-  const shouldDeferWebGL = definition.index === "101" && requestedSpecimen && requestedSpecimen !== "101";
-  const component = shouldDeferWebGL
-    ? { root: createElement("div", "depth-assembly is-deferred"), destroy() {} }
+  const shouldDefer = requestedSpecimen && requestedSpecimen !== definition.index;
+  const component = shouldDefer
+    ? { root: createElement("div", `${definition.componentClass} is-deferred`), destroy() {} }
     : definition.factory({ paused: requestedPaused });
   const specimen = SpecimenSection({
     index: definition.index,
@@ -16949,7 +17090,7 @@ const compactLoadingDefinitions = [
 ];
 
 const compactLoadingSpecimens = compactLoadingDefinitions.map((definition) => {
-  const shouldDefer = requestedSpecimen && requestedSpecimen !== definition.index;
+  const shouldDefer = requestedSpecimen && requestedSpecimen !== definition.index && definition.index !== "148";
   const component = shouldDefer
     ? { root: createElement("div", "compact-loading-family is-deferred"), destroy() {} }
     : CompactLoadingFamily({ state: definition.state, paused: requestedPaused });

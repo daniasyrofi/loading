@@ -5369,10 +5369,18 @@ html:root[data-embedded="true"][data-theme="dark"]:not([data-immersive="true"]) 
     .sweep-track__row,
     .rhythm-status__row,
     .compact-loading-family
-  ) > * {
+  ) > :is(:nth-child(2), :nth-child(3)) {
   width: max-content;
   min-width: 0;
   justify-self: start;
+}
+
+.is-showcase-detail.balance-beam-specimen
+  .demo-surface:is(:fullscreen, .is-recording-fallback)
+  .balance-beam-indicator {
+  width: 34px;
+  min-width: 34px;
+  flex-basis: 34px;
 }
 
 /* Standalone Loading showcase chrome. */
@@ -17947,11 +17955,65 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   box-shadow:
     0 0 0 1px rgb(0 0 0 / 5%),
     0 1px 2px rgb(25 40 68 / 4%);
+  opacity: 1;
+  translate: 0 0;
+  filter: blur(0);
+  transition-property: opacity, translate, filter;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root[data-theme="dark"] .demo-surface:is(:fullscreen, .is-recording-fallback) .recording-content-panel {
   background: rgb(18 23 32 / 90%);
   box-shadow: 0 0 0 1px rgb(255 255 255 / 7%);
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback)[data-content-direction="next"] {
+  --content-exit-x: -8px;
+  --content-enter-x: 8px;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback)[data-content-direction="previous"] {
+  --content-exit-x: 8px;
+  --content-enter-x: -8px;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback) > .variant-selector {
+  opacity: 1;
+  translate: 0 0;
+  filter: blur(0);
+  transition-property: opacity, translate, filter;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-content-switching-out .recording-content-panel,
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-content-switching-out > .variant-selector {
+  opacity: 0;
+  translate: var(--content-exit-x, -8px) 0;
+  filter: blur(4px);
+  transition-duration: 120ms;
+  transition-timing-function: ease-in;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-content-switching-in .recording-content-panel,
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-content-switching-in > .variant-selector {
+  opacity: 0;
+  translate: var(--content-enter-x, 8px) 0;
+  filter: blur(4px);
+  transition-duration: 0.01ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-surface:is(:fullscreen, .is-recording-fallback) .recording-content-panel,
+  .demo-surface:is(:fullscreen, .is-recording-fallback) > .variant-selector {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:root[data-motion="reduce"] .demo-surface:is(:fullscreen, .is-recording-fallback) .recording-content-panel,
+:root[data-motion="reduce"] .demo-surface:is(:fullscreen, .is-recording-fallback) > .variant-selector {
+  transition-duration: 0.01ms !important;
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback) .recording-subject :is(
