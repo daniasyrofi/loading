@@ -15111,8 +15111,7 @@ function installShowcaseChrome({ root, item, catalog }) {
   const singleModeButton = createElement("button", "showcase-mode-button", "Single");
   const galleryModeButton = createElement("button", "showcase-mode-button", "Gallery");
   const galleryCards = [];
-  const galleryColumns = 5;
-  const galleryRows = Math.ceil(ordered.length / galleryColumns);
+  const galleryColumns = 6;
   const galleryCamera = { x: 0, y: 0 };
   const galleryVelocity = { x: 0, y: 0 };
   const galleryPointers = new Map();
@@ -15168,14 +15167,20 @@ function installShowcaseChrome({ root, item, catalog }) {
   const renderGalleryCards = () => {
     const viewport = galleryViewportSize();
     const compact = viewport.width < 640;
-    const worldWidth = Math.max(compact ? 1280 : 2100, viewport.width * (compact ? 3.15 : 1.85));
-    const worldHeight = Math.max(compact ? 1560 : 1300, viewport.height * (compact ? 2.35 : 1.85));
+    const layoutColumns = compact ? 5 : galleryColumns;
+    const layoutRows = Math.ceil(galleryCards.length / layoutColumns);
+    const worldWidth = Math.max(compact ? 1120 : 2000, viewport.width * (compact ? 2.8 : 1.6));
+    const worldHeight = Math.max(compact ? 1420 : 1050, viewport.height * (compact ? 2.15 : 1.45));
     const centreX = viewport.width / 2;
     const centreY = viewport.height / 2 + (compact ? 24 : 10);
     const overscan = compact ? 64 : 96;
 
     galleryCards.forEach((record) => {
-      const { card, normalizedX, normalizedY } = record;
+      const { card, index } = record;
+      const column = index % layoutColumns;
+      const row = Math.floor(index / layoutColumns);
+      const normalizedX = (column + 0.5) / layoutColumns - 0.5 + Math.sin(index * 1.91) * 0.025;
+      const normalizedY = (row + 0.5) / layoutRows - 0.5 + Math.cos(index * 1.37) * 0.03;
       const width = card.offsetWidth || 280;
       const height = card.offsetHeight || 92;
       const worldX = normalizedX * worldWidth;
@@ -15248,11 +15253,6 @@ function installShowcaseChrome({ root, item, catalog }) {
     removeEmbeddedControls(record.panel);
     const card = createElement("article", `showcase-gallery-card recording-subject ${record.contextClassName}`.trim());
     const cardButton = createElement("button", "showcase-gallery-card__hit");
-    const column = index % galleryColumns;
-    const row = Math.floor(index / galleryColumns);
-    const normalizedX = (column + 0.5) / galleryColumns - 0.5 + Math.sin(index * 1.91) * 0.025;
-    const normalizedY = (row + 0.5) / galleryRows - 0.5 + Math.cos(index * 1.37) * 0.03;
-
     card.style.left = "0";
     card.style.top = "0";
     card.style.setProperty("--gallery-order", index);
@@ -15294,8 +15294,6 @@ function installShowcaseChrome({ root, item, catalog }) {
       entry,
       record,
       index,
-      normalizedX,
-      normalizedY,
       displayX: 0,
       displayY: 0,
       renderedWidth: 0,

@@ -5440,6 +5440,8 @@ dialog:focus-visible {
   isolation: isolate;
   width: fit-content;
   height: fit-content;
+  contain: layout paint style;
+  visibility: hidden;
   opacity: 0;
   scale: 1.24;
   transform-origin: 50% 50%;
@@ -5450,6 +5452,7 @@ dialog:focus-visible {
 }
 
 .is-gallery-ready .showcase-gallery-card.is-gallery-visible {
+  visibility: visible;
   opacity: 1;
 }
 
@@ -20125,38 +20128,14 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   text-align: right;
 }
 
-/* Gallery reuses the exact two-layer Single specimen surface while positioning
-   each live specimen on a flat, wrapping canvas. */
+/* Gallery only positions the Single specimen component on the 2D canvas.
+   Every visual surface continues to come from the Single component rules. */
 .demo-surface:is(:fullscreen, .is-recording-fallback)
   .showcase-gallery-card.recording-subject {
   position: absolute;
-  display: flex;
-  width: fit-content;
-  height: fit-content;
   max-width: none;
   max-height: none;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  border-radius: 14px;
-  background: rgb(255 255 255 / 22%);
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 30%),
-    0 4px 16px rgb(30 45 70 / 5%);
-  backdrop-filter: blur(20px) saturate(1.18);
-  filter: grayscale(1) !important;
   opacity: 0;
-  scale: 1.24;
-  translate: 0 0;
-}
-
-:root[data-theme="dark"]
-  .demo-surface:is(:fullscreen, .is-recording-fallback)
-  .showcase-gallery-card.recording-subject {
-  background: rgb(255 255 255 / 8%);
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 12%),
-    0 4px 16px rgb(0 0 0 / 8%);
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-ready
@@ -20167,32 +20146,7 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
 
 .demo-surface:is(:fullscreen, .is-recording-fallback)
   .showcase-gallery-card
-  .recording-content-panel {
-  position: static;
-  inset: auto;
-  display: flex;
-  box-sizing: border-box;
-  width: fit-content;
-  height: fit-content;
-  max-width: 100%;
-  max-height: 100%;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 13px;
-  border-radius: 8px;
-  background: rgb(255 255 255 / 94%);
-  box-shadow:
-    0 0 0 1px rgb(0 0 0 / 5%),
-    0 1px 2px rgb(25 40 68 / 4%);
-  opacity: 1;
-  translate: 0 0;
-  filter: none;
-}
-
-:root[data-theme="dark"]
-  .demo-surface:is(:fullscreen, .is-recording-fallback)
-  .showcase-gallery-card
-  .recording-content-panel {
-  background: rgb(18 18 20 / 94%);
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 7%);
+  .recording-content-panel
+  > * {
+  filter: grayscale(1);
 }
