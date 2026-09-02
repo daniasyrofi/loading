@@ -5337,6 +5337,333 @@ dialog:focus-visible {
   text-align: right;
 }
 
+/* Fullscreen discovery mode: a dense, pannable gallery built from the same
+   production specimens used by Single view. */
+.showcase-mode-switch,
+.showcase-gallery,
+.showcase-gallery-zoom {
+  display: none;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback) > .showcase-mode-switch {
+  position: fixed;
+  z-index: 8;
+  top: max(var(--recording-chrome-inset), env(safe-area-inset-top));
+  left: 50%;
+  display: flex;
+  width: max-content;
+  min-height: 40px;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--line-strong) 82%, transparent),
+    0 8px 24px rgb(8 15 28 / 12%);
+  backdrop-filter: blur(18px) saturate(1.15);
+  opacity: 1;
+  translate: -50% 0;
+  transition-property: opacity, translate;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+
+.showcase-mode-button {
+  min-width: 68px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 560;
+  transition-property: color, background-color, box-shadow, scale;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(.2, 0, 0, 1);
+}
+
+.showcase-mode-button:hover { color: var(--ink); }
+.showcase-mode-button:active { scale: .96; }
+.showcase-mode-button[aria-pressed="true"] {
+  background: var(--surface);
+  box-shadow: var(--shadow-control);
+  color: var(--ink);
+}
+
+.showcase-mode-button:focus-visible,
+.showcase-gallery:focus-visible,
+.showcase-gallery-card__hit:focus-visible,
+.showcase-gallery-zoom__button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode > .showcase-gallery {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  cursor: grab;
+  opacity: 0;
+  touch-action: none;
+  transition-property: opacity;
+  transition-duration: 220ms;
+  transition-timing-function: cubic-bezier(.2, 0, 0, 1);
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode.is-gallery-ready > .showcase-gallery {
+  opacity: 1;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode > .showcase-gallery:active {
+  cursor: grabbing;
+}
+
+.showcase-gallery[hidden] { display: none !important; }
+
+.showcase-gallery__world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.showcase-gallery__world.is-camera-animating {
+  transition-property: transform;
+  transition-duration: 320ms;
+  transition-timing-function: cubic-bezier(.22, 1, .36, 1);
+}
+
+.showcase-gallery-card {
+  position: absolute;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 89%, transparent);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 9%),
+    0 18px 42px rgb(0 0 0 / 12%);
+  opacity: .28;
+  scale: .96;
+  transition-property: opacity, scale, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(.2, 0, 0, 1);
+}
+
+:root[data-theme="light"] .showcase-gallery-card {
+  background: rgb(255 255 255 / 84%);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 8%),
+    0 18px 42px rgb(33 48 68 / 10%);
+}
+
+.is-gallery-ready .showcase-gallery-card.is-gallery-visible {
+  opacity: 1;
+  scale: 1;
+  animation: showcase-gallery-card-enter 260ms cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: calc(var(--gallery-order) * 12ms);
+}
+
+.is-gallery-ready .showcase-gallery-card:not(.is-gallery-visible) {
+  opacity: .44;
+  scale: .985;
+}
+
+.showcase-gallery-card:has(.showcase-gallery-card__hit:hover) {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 16%),
+    0 22px 56px rgb(0 0 0 / 18%);
+  scale: 1.018;
+}
+
+.showcase-gallery-card:has(.showcase-gallery-card__hit:active) { scale: .96; }
+
+.showcase-gallery-card__surface.demo-surface {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback)
+  .showcase-gallery-card
+  .recording-content-panel {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+  translate: 0 0;
+  filter: none;
+}
+
+.showcase-gallery-card__hit {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  width: 100%;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.showcase-gallery-card__hit:focus-visible {
+  outline-offset: -4px;
+}
+
+.showcase-gallery-card.is-gallery-sleeping .recording-content-panel *,
+.showcase-gallery-card.is-gallery-sleeping .recording-content-panel *::before,
+.showcase-gallery-card.is-gallery-sleeping .recording-content-panel *::after {
+  animation-play-state: paused !important;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode > :is(
+  .recording-subject,
+  .variant-selector,
+  .showcase-navigation
+) {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode > .showcase-gallery-zoom {
+  position: fixed;
+  z-index: 8;
+  right: max(var(--recording-chrome-inset), env(safe-area-inset-right));
+  bottom: max(var(--recording-chrome-inset), env(safe-area-inset-bottom));
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--line-strong) 82%, transparent),
+    0 8px 24px rgb(8 15 28 / 12%);
+  backdrop-filter: blur(18px) saturate(1.15);
+}
+
+.showcase-gallery-zoom__button {
+  display: grid;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  transition-property: color, background-color, scale;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.showcase-gallery-zoom__button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.showcase-gallery-zoom__button:active { scale: .96; }
+.showcase-gallery-zoom__button svg { width: 15px; height: 15px; }
+
+.showcase-gallery-zoom__value {
+  min-width: 48px;
+  color: var(--ink-secondary);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.showcase-gallery-zoom__fit {
+  margin-left: 1px;
+  box-shadow: inset 1px 0 rgb(255 255 255 / 8%);
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-selecting
+  .showcase-gallery-card:not(:has(.showcase-gallery-card__hit:focus)) {
+  opacity: .34;
+}
+
+@keyframes showcase-gallery-card-enter {
+  from { opacity: 0; scale: .94; filter: blur(4px); }
+  to { opacity: 1; scale: 1; filter: blur(0); }
+}
+
+@media (max-width: 820px) {
+  .demo-surface:is(:fullscreen, .is-recording-fallback) > .showcase-mode-switch {
+    top: max(62px, calc(env(safe-area-inset-top) + 62px));
+  }
+
+  .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode > .showcase-gallery-zoom {
+    right: 50%;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    translate: 50% 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .showcase-mode-button {
+    min-width: 62px;
+    padding-inline: 9px;
+  }
+
+  .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode > .showcase-gallery-zoom {
+    max-width: calc(100vw - 24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showcase-gallery__world,
+  .showcase-gallery-card,
+  .showcase-gallery {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+:root[data-motion="reduce"] :is(
+  .showcase-gallery__world,
+  .showcase-gallery-card,
+  .showcase-gallery
+) {
+  animation: none !important;
+  transition-duration: .01ms !important;
+}
+
 /* Public showcase refinement: quieter comparison surfaces and a specifically
    scoped content-sized recording subject. */
 html:root[data-embedded="true"][data-theme="dark"]:not([data-immersive="true"]) .specimen-section {
@@ -19925,4 +20252,52 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   justify-self: end;
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+/* Keep nested Gallery specimens sized to their cards. These rules live after
+   the fullscreen specimen contract so viewport-sized Single rules cannot win
+   the cascade inside the canvas. */
+.demo-surface:is(:fullscreen, .is-recording-fallback)
+  .showcase-gallery-card
+  > .showcase-gallery-card__surface.demo-surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0 !important;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback)
+  .showcase-gallery-card__content {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback)
+  .showcase-gallery-card
+  .recording-content-panel {
+  position: static;
+  inset: auto;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+  translate: 0 0;
+  filter: none;
 }
