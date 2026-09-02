@@ -5427,12 +5427,10 @@ dialog:focus-visible {
 .showcase-gallery__world {
   position: absolute;
   inset: 0;
-  perspective: 1200px;
-  transform-style: preserve-3d;
 }
 
 .showcase-gallery__world.is-camera-animating .showcase-gallery-card {
-  transition-property: transform, opacity, filter, box-shadow;
+  transition-property: transform, opacity;
   transition-duration: 320ms;
   transition-timing-function: cubic-bezier(.22, 1, .36, 1);
 }
@@ -5440,33 +5438,19 @@ dialog:focus-visible {
 .showcase-gallery-card {
   position: absolute;
   isolation: isolate;
-  overflow: hidden;
-  border-radius: 22px;
-  background: rgb(34 34 36 / 96%);
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 10%),
-    0 16px 42px rgb(0 0 0 / 20%);
-  backface-visibility: hidden;
-  filter: blur(var(--gallery-depth-blur, 0));
+  width: fit-content;
+  height: fit-content;
   opacity: 0;
-  scale: 1;
+  scale: 1.24;
   transform-origin: 50% 50%;
-  transition-property: opacity, scale, box-shadow, filter;
+  transition-property: opacity, scale, box-shadow;
   transition-duration: 180ms;
   transition-timing-function: cubic-bezier(.2, 0, 0, 1);
   will-change: transform, opacity;
 }
 
-:root[data-theme="light"] .showcase-gallery-card {
-  background: rgb(217 217 219 / 96%);
-  box-shadow:
-    0 0 0 1px rgb(0 0 0 / 8%),
-    0 14px 38px rgb(0 0 0 / 9%);
-}
-
 .is-gallery-ready .showcase-gallery-card.is-gallery-visible {
-  opacity: var(--gallery-depth-opacity, 1);
-  scale: 1;
+  opacity: 1;
 }
 
 .is-gallery-ready .showcase-gallery-card:not(.is-gallery-visible) {
@@ -5474,60 +5458,11 @@ dialog:focus-visible {
   pointer-events: none;
 }
 
-.showcase-gallery-card.is-gallery-back .showcase-gallery-card__hit {
-  pointer-events: none;
-}
-
 .showcase-gallery-card:has(.showcase-gallery-card__hit:hover) {
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 16%),
-    0 22px 56px rgb(0 0 0 / 18%);
-  scale: 1.018;
+  scale: 1.265;
 }
 
-.showcase-gallery-card:has(.showcase-gallery-card__hit:active) { scale: .96; }
-
-.showcase-gallery-card__surface.demo-surface {
-  position: absolute;
-  inset: 8px;
-  display: flex;
-  width: auto;
-  height: auto;
-  min-height: 0;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 0;
-  border-radius: 14px !important;
-  background: rgb(18 18 20);
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 10%);
-  filter: grayscale(1);
-  pointer-events: none;
-}
-
-:root[data-theme="light"] .showcase-gallery-card__surface.demo-surface {
-  background: rgb(248 248 249);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 10%);
-}
-
-.demo-surface:is(:fullscreen, .is-recording-fallback)
-  .showcase-gallery-card
-  .recording-content-panel {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  opacity: 1;
-  translate: 0 0;
-  filter: none;
-}
+.showcase-gallery-card:has(.showcase-gallery-card__hit:active) { scale: 1.19; }
 
 .showcase-gallery-card__hit {
   position: absolute;
@@ -20190,40 +20125,44 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   text-align: right;
 }
 
-/* Keep nested Gallery specimens sized to their cards. These rules live after
-   the fullscreen specimen contract so viewport-sized Single rules cannot win
-   the cascade inside the canvas. */
+/* Gallery reuses the exact two-layer Single specimen surface while positioning
+   each live specimen on a flat, wrapping canvas. */
 .demo-surface:is(:fullscreen, .is-recording-fallback)
-  .showcase-gallery-card
-  > .showcase-gallery-card__surface.demo-surface {
+  .showcase-gallery-card.recording-subject {
   position: absolute;
-  inset: 8px;
-  width: auto;
-  height: auto;
-  min-height: 0 !important;
-  padding: 0;
-  border: 0;
-  border-radius: 14px !important;
-  background: rgb(18 18 20) !important;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 10%) !important;
-  filter: grayscale(1);
-}
-
-:root[data-theme="light"]
-  .demo-surface:is(:fullscreen, .is-recording-fallback)
-  .showcase-gallery-card
-  > .showcase-gallery-card__surface.demo-surface {
-  background: rgb(248 248 249) !important;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 10%) !important;
-}
-
-.demo-surface:is(:fullscreen, .is-recording-fallback)
-  .showcase-gallery-card__content {
   display: flex;
-  width: 100%;
-  height: 100%;
+  width: fit-content;
+  height: fit-content;
+  max-width: none;
+  max-height: none;
   align-items: center;
   justify-content: center;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 22%);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 30%),
+    0 4px 16px rgb(30 45 70 / 5%);
+  backdrop-filter: blur(20px) saturate(1.18);
+  filter: grayscale(1) !important;
+  opacity: 0;
+  scale: 1.24;
+  translate: 0 0;
+}
+
+:root[data-theme="dark"]
+  .demo-surface:is(:fullscreen, .is-recording-fallback)
+  .showcase-gallery-card.recording-subject {
+  background: rgb(255 255 255 / 8%);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 12%),
+    0 4px 16px rgb(0 0 0 / 8%);
+}
+
+.demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-ready
+  .showcase-gallery-card.recording-subject.is-gallery-visible {
+  visibility: visible;
+  opacity: 1;
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback)
@@ -20232,17 +20171,28 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   position: static;
   inset: auto;
   display: flex;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
+  box-sizing: border-box;
+  width: fit-content;
+  height: fit-content;
+  max-width: 100%;
+  max-height: 100%;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  padding: 10px 13px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 5%),
+    0 1px 2px rgb(25 40 68 / 4%);
   opacity: 1;
   translate: 0 0;
   filter: none;
+}
+
+:root[data-theme="dark"]
+  .demo-surface:is(:fullscreen, .is-recording-fallback)
+  .showcase-gallery-card
+  .recording-content-panel {
+  background: rgb(18 18 20 / 94%);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 7%);
 }
