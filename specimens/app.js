@@ -1197,9 +1197,13 @@ function ElapsedTimer({ initialElapsed = 0, paused = false } = {}) {
     render();
   }
 
+  const handleResetRequest = () => reset(0);
+  root.addEventListener("elapsed-timer:reset", handleResetRequest);
+
   function destroy() {
     stopInterval();
     visibilityObserver?.disconnect();
+    root.removeEventListener("elapsed-timer:reset", handleResetRequest);
   }
 
   render();
@@ -14254,6 +14258,7 @@ function createRecordingBackdropRenderer(surface) {
 
   let frameId = 0;
   let running = false;
+  let suspended = false;
   let destroyed = false;
   let lastFrame = 0;
   let artTime = 4.0;
@@ -14329,7 +14334,7 @@ function createRecordingBackdropRenderer(surface) {
   };
 
   const start = () => {
-    if (destroyed || running || document.hidden) return;
+    if (destroyed || suspended || running || document.hidden) return;
     running = true;
     renderFrame();
     if (!reducedMotion()) frameId = window.requestAnimationFrame(tick);
@@ -14397,6 +14402,15 @@ function createRecordingBackdropRenderer(surface) {
     },
     refreshTheme() {
       if (canvas.classList.contains("is-active")) renderFrame();
+    },
+    setSuspended(nextSuspended) {
+      suspended = Boolean(nextSuspended);
+      if (suspended) {
+        renderFrame();
+        stop();
+      } else if (canvas.classList.contains("is-active") || asciiPattern) {
+        start();
+      }
     },
     destroy() {
       destroyed = true;
@@ -15067,13 +15081,10 @@ function installShowcaseChrome({ root, item, catalog }) {
       wakeRecordingChrome(surface);
       return;
     }
-    const resetUrl = preserveExperience(new URL(window.location.href));
-    if (document.documentElement.dataset.immersive === "true") {
-      resetUrl.searchParams.set("embedded", "true");
-      resetUrl.searchParams.set("immersive", "true");
-    }
-    resetUrl.searchParams.set("reset", String(Date.now()));
-    navigateWithContinuity(resetUrl, { replace: true });
+    subject?.querySelectorAll(".elapsed-timer").forEach((timer) => {
+      timer.dispatchEvent(new CustomEvent("elapsed-timer:reset"));
+    });
+    wakeRecordingChrome(surface);
   });
 
   surface.append(timing, primaryActions);
@@ -15111,7 +15122,6 @@ function installShowcaseChrome({ root, item, catalog }) {
   const singleModeButton = createElement("button", "showcase-mode-button", "Single");
   const galleryModeButton = createElement("button", "showcase-mode-button", "Gallery");
   const galleryCards = [];
-  const galleryColumns = 6;
   const galleryCamera = { x: 0, y: 0 };
   const galleryVelocity = { x: 0, y: 0 };
   const galleryPointers = new Map();
@@ -15121,6 +15131,9 @@ function installShowcaseChrome({ root, item, catalog }) {
   let galleryGesture = null;
   let galleryDidDrag = false;
   let galleryHasCamera = false;
+  let galleryLayoutDirty = true;
+  let galleryColumnCount = 5;
+  let galleryWorldSize = { width: 1, height: 1 };
   let gallerySelectionPending = false;
   let showcaseMode = "single";
 
@@ -15140,6 +15153,85 @@ function installShowcaseChrome({ root, item, catalog }) {
   const updateModeButtons = () => {
     singleModeButton.setAttribute("aria-pressed", String(showcaseMode === "single"));
     galleryModeButton.setAttribute("aria-pressed", String(showcaseMode === "gallery"));
+  };
+
+  const reduceShowcaseMotion = () => document.documentElement.dataset.motion === "reduce"
+    || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const runPanelTransition = async ({ panel, mutate, onReady }) => {
+    if (!panel || reduceShowcaseMotion()) {
+      mutate();
+      onReady?.();
+      return;
+    }
+
+    const sourceRect = panel.getBoundingClientRect();
+    mutate();
+    const targetRect = panel.getBoundingClientRect();
+    const targetParent = panel.parentNode;
+    const targetNextSibling = panel.nextSibling;
+    const previousStyle = panel.getAttribute("style");
+    const previousParentWidth = targetParent?.style.width || "";
+    const previousParentHeight = targetParent?.style.height || "";
+    const targetParentWidth = targetParent instanceof HTMLElement ? targetParent.offsetWidth : 0;
+    const targetParentHeight = targetParent instanceof HTMLElement ? targetParent.offsetHeight : 0;
+
+    if (!sourceRect.width || !sourceRect.height || !targetRect.width || !targetRect.height) {
+      onReady?.();
+      return;
+    }
+
+    if (targetParent instanceof HTMLElement) {
+      targetParent.style.width = `${targetParentWidth}px`;
+      targetParent.style.height = `${targetParentHeight}px`;
+    }
+    surface.append(panel);
+    Object.assign(panel.style, {
+      position: "fixed",
+      inset: "auto",
+      top: `${targetRect.top}px`,
+      left: `${targetRect.left}px`,
+      width: `${targetRect.width}px`,
+      height: `${targetRect.height}px`,
+      maxWidth: "none",
+      maxHeight: "none",
+      margin: "0",
+      zIndex: "12",
+      transformOrigin: "top left",
+      pointerEvents: "none"
+    });
+
+    const inverseX = sourceRect.left - targetRect.left;
+    const inverseY = sourceRect.top - targetRect.top;
+    const inverseScaleX = sourceRect.width / targetRect.width;
+    const inverseScaleY = sourceRect.height / targetRect.height;
+    onReady?.();
+    const animation = panel.animate([
+      {
+        transform: `translate3d(${inverseX}px, ${inverseY}px, 0) scale(${inverseScaleX}, ${inverseScaleY})`,
+        opacity: 1,
+        filter: "blur(0)"
+      },
+      { transform: "translate3d(0, 0, 0) scale(1)", opacity: 1, filter: "blur(0)" }
+    ], {
+      duration: 260,
+      easing: "cubic-bezier(.22, 1, .36, 1)",
+      fill: "both"
+    });
+    try {
+      await animation.finished;
+    } catch {
+      // An interrupted transition should still settle into the requested mode.
+    }
+    animation.cancel();
+    if (previousStyle === null) panel.removeAttribute("style");
+    else panel.setAttribute("style", previousStyle);
+    if (targetNextSibling?.parentNode === targetParent) targetParent.insertBefore(panel, targetNextSibling);
+    else targetParent?.append(panel);
+    if (targetParent instanceof HTMLElement) {
+      targetParent.style.width = previousParentWidth;
+      targetParent.style.height = previousParentHeight;
+    }
   };
 
   const stopGalleryCameraAnimation = () => {
@@ -15164,27 +15256,60 @@ function installShowcaseChrome({ root, item, catalog }) {
     return (remainder < 0 ? remainder + period : remainder) - period / 2;
   };
 
+  const measureGalleryCards = () => {
+    galleryCards.forEach((record) => {
+      record.renderedWidth = record.card.offsetWidth || 240;
+      record.renderedHeight = record.card.offsetHeight || 68;
+    });
+  };
+
+  const layoutGalleryCards = () => {
+    const viewport = galleryViewportSize();
+    const compact = viewport.width < 640;
+    const layoutColumns = compact ? 2 : viewport.width < 980 ? 3 : viewport.width < 1440 ? 4 : 5;
+    galleryColumnCount = layoutColumns;
+    const maxCardWidth = Math.max(240, ...galleryCards.map(({ renderedWidth }) => renderedWidth));
+    const columnWidth = Math.min(compact ? 268 : 316, Math.max(maxCardWidth, compact ? 224 : 270));
+    const columnGap = compact ? 38 : Math.min(70, Math.max(42, viewport.width * 0.03));
+    const rowGap = compact ? 48 : Math.min(68, Math.max(48, viewport.height * 0.052));
+    const stagger = [0, .58, .22, .76, .38];
+    const horizontalJitter = [-26, 30, -12, 24, -32, 17, 28, -20];
+    const verticalJitter = [0, 18, 7, 24, 11, 20];
+    const columnHeights = Array.from({ length: layoutColumns }, (_, column) => stagger[column] * rowGap);
+
+    galleryCards.forEach((record, index) => {
+      const column = columnHeights.indexOf(Math.min(...columnHeights));
+      record.worldX = column * (columnWidth + columnGap) + columnWidth / 2
+        + horizontalJitter[index % horizontalJitter.length] * (compact ? .45 : 1);
+      record.worldY = columnHeights[column] + record.renderedHeight / 2;
+      columnHeights[column] += record.renderedHeight + rowGap
+        + verticalJitter[index % verticalJitter.length] * (compact ? .55 : 1);
+    });
+
+    galleryWorldSize = {
+      width: layoutColumns * columnWidth + (layoutColumns - 1) * columnGap,
+      height: Math.max(...columnHeights) - rowGap + 24
+    };
+    galleryLayoutDirty = false;
+  };
+
   const renderGalleryCards = () => {
     const viewport = galleryViewportSize();
     const compact = viewport.width < 640;
-    const layoutColumns = compact ? 5 : galleryColumns;
-    const layoutRows = Math.ceil(galleryCards.length / layoutColumns);
-    const worldWidth = Math.max(compact ? 1120 : 2000, viewport.width * (compact ? 2.8 : 1.6));
-    const worldHeight = Math.max(compact ? 1420 : 1050, viewport.height * (compact ? 2.15 : 1.45));
+    if (galleryLayoutDirty) {
+      measureGalleryCards();
+      layoutGalleryCards();
+    }
+    const worldWidth = galleryWorldSize.width;
+    const worldHeight = galleryWorldSize.height;
     const centreX = viewport.width / 2;
     const centreY = viewport.height / 2 + (compact ? 24 : 10);
     const overscan = compact ? 64 : 96;
 
     galleryCards.forEach((record) => {
-      const { card, index } = record;
-      const column = index % layoutColumns;
-      const row = Math.floor(index / layoutColumns);
-      const normalizedX = (column + 0.5) / layoutColumns - 0.5 + Math.sin(index * 1.91) * 0.025;
-      const normalizedY = (row + 0.5) / layoutRows - 0.5 + Math.cos(index * 1.37) * 0.03;
-      const width = card.offsetWidth || 280;
-      const height = card.offsetHeight || 92;
-      const worldX = normalizedX * worldWidth;
-      const worldY = normalizedY * worldHeight;
+      const { card, renderedWidth: width, renderedHeight: height } = record;
+      const worldX = record.worldX - worldWidth / 2;
+      const worldY = record.worldY - worldHeight / 2;
       const x = centreX + wrapGalleryCoordinate(worldX + galleryCamera.x, worldWidth) - width / 2;
       const y = centreY + wrapGalleryCoordinate(worldY + galleryCamera.y, worldHeight) - height / 2;
       const visible = x + width > -overscan
@@ -15194,8 +15319,6 @@ function installShowcaseChrome({ root, item, catalog }) {
 
       record.displayX = x;
       record.displayY = y;
-      record.renderedWidth = width;
-      record.renderedHeight = height;
       card.style.transform = `translate3d(${x}px, ${y}px, 0)`;
       card.classList.toggle("is-gallery-visible", visible);
       card.classList.toggle("is-gallery-sleeping", !visible);
@@ -15258,20 +15381,12 @@ function installShowcaseChrome({ root, item, catalog }) {
     card.style.setProperty("--gallery-order", index);
     cardButton.type = "button";
     cardButton.setAttribute("aria-label", `Open ${entry.title} in Single view`);
-    cardButton.addEventListener("click", async (event) => {
+    cardButton.addEventListener("click", (event) => {
       if (galleryDidDrag || gallerySelectionPending) {
         event.preventDefault();
         return;
       }
-      gallerySelectionPending = true;
-      centerGalleryCard(galleryCards[index], { animate: true });
-      surface.classList.add("is-gallery-selecting");
-      if (document.documentElement.dataset.motion !== "reduce") {
-        await new Promise((resolve) => window.setTimeout(resolve, 320));
-      }
-      setShowcaseMode("single", { index, updateHistory: true });
-      surface.classList.remove("is-gallery-selecting");
-      gallerySelectionPending = false;
+      openGalleryRecord(galleryCards[index], { updateHistory: true });
     });
     cardButton.addEventListener("focus", () => {
       if (showcaseMode === "gallery" && !card.classList.contains("is-gallery-visible")) {
@@ -15280,7 +15395,7 @@ function installShowcaseChrome({ root, item, catalog }) {
     });
     cardButton.addEventListener("keydown", (event) => {
       const horizontal = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-      const vertical = event.key === "ArrowDown" ? galleryColumns : event.key === "ArrowUp" ? -galleryColumns : 0;
+      const vertical = event.key === "ArrowDown" ? galleryColumnCount : event.key === "ArrowUp" ? -galleryColumnCount : 0;
       const offset = horizontal || vertical;
       if (!offset) return;
       event.preventDefault();
@@ -15294,6 +15409,8 @@ function installShowcaseChrome({ root, item, catalog }) {
       entry,
       record,
       index,
+      worldX: 0,
+      worldY: 0,
       displayX: 0,
       displayY: 0,
       renderedWidth: 0,
@@ -15307,7 +15424,7 @@ function installShowcaseChrome({ root, item, catalog }) {
     });
   };
 
-  function setShowcaseMode(mode, { index = currentIndex, updateHistory = false } = {}) {
+  function setShowcaseMode(mode, { index = currentIndex, updateHistory = false, immediateReady = false } = {}) {
     const nextMode = mode === "gallery" ? "gallery" : "single";
     if (nextMode === showcaseMode && nextMode === "single" && index === currentIndex) return;
     surface.querySelectorAll(".recording-select.is-open .recording-select-trigger")
@@ -15319,15 +15436,22 @@ function installShowcaseChrome({ root, item, catalog }) {
       galleryCards.forEach(({ card, button, record }) => {
         if (record.panel) card.insertBefore(record.panel, button);
       });
+      galleryLayoutDirty = true;
       showcaseMode = "gallery";
       gallery.hidden = false;
       subject?.setAttribute("aria-hidden", "true");
       navigation?.setAttribute("aria-hidden", "true");
       resetButton.setAttribute("aria-label", "Reset infinite canvas position");
       surface.classList.add("is-gallery-mode");
+      activeRecordingBackdropRenderer?.setSuspended?.(true);
       if (!galleryHasCamera) frameShowcaseGallery();
       else scheduleGalleryCamera();
-      window.requestAnimationFrame(() => surface.classList.add("is-gallery-ready"));
+      if (immediateReady) {
+        renderGalleryCards();
+        surface.classList.add("is-gallery-ready");
+      } else {
+        window.requestAnimationFrame(() => surface.classList.add("is-gallery-ready"));
+      }
       gallery.focus({ preventScroll: true });
     } else {
       stopGalleryInertia();
@@ -15338,14 +15462,56 @@ function installShowcaseChrome({ root, item, catalog }) {
       subject?.removeAttribute("aria-hidden");
       navigation?.removeAttribute("aria-hidden");
       resetButton.setAttribute("aria-label", "Reset animation");
+      activeRecordingBackdropRenderer?.setSuspended?.(false);
       commitSpecimen(index, { updateHistory });
     }
     updateModeButtons();
     wakeRecordingChrome(surface);
   }
 
-  singleModeButton.addEventListener("click", () => setShowcaseMode("single", { updateHistory: false }));
-  galleryModeButton.addEventListener("click", () => setShowcaseMode("gallery"));
+  async function enterShowcaseGallery() {
+    if (showcaseMode === "gallery" || gallerySelectionPending) return;
+    gallerySelectionPending = true;
+    const currentRecord = specimenRecords.get(ordered[currentIndex]?.id);
+    const currentCard = galleryCards[currentIndex];
+    currentCard?.card.classList.add("is-gallery-selected");
+    surface.classList.add("is-gallery-revealing");
+    await runPanelTransition({
+      panel: currentRecord?.panel,
+      mutate: () => setShowcaseMode("gallery", { immediateReady: true }),
+      onReady: () => surface.classList.remove("is-gallery-revealing")
+    });
+    currentCard?.card.classList.remove("is-gallery-selected");
+    surface.classList.remove("is-gallery-revealing");
+    gallerySelectionPending = false;
+  }
+
+  async function openGalleryRecord(record, { updateHistory = false } = {}) {
+    if (!record || showcaseMode !== "gallery" || gallerySelectionPending) return;
+    gallerySelectionPending = true;
+    record.card.classList.add("is-gallery-selected");
+    surface.classList.add("is-gallery-selecting");
+    centerGalleryCard(record, { animate: true });
+    if (!reduceShowcaseMotion()) {
+      await new Promise((resolve) => window.setTimeout(resolve, 220));
+    }
+    await runPanelTransition({
+      panel: record.record.panel,
+      mutate: () => setShowcaseMode("single", {
+        index: record.index,
+        updateHistory,
+        immediateReady: true
+      })
+    });
+    record.card.classList.remove("is-gallery-selected");
+    surface.classList.remove("is-gallery-selecting");
+    gallerySelectionPending = false;
+  }
+
+  singleModeButton.addEventListener("click", () => {
+    if (showcaseMode === "gallery") openGalleryRecord(galleryCards[currentIndex], { updateHistory: false });
+  });
+  galleryModeButton.addEventListener("click", enterShowcaseGallery);
 
   gallery.addEventListener("wheel", (event) => {
     if (showcaseMode !== "gallery") return;
@@ -15460,7 +15626,10 @@ function installShowcaseChrome({ root, item, catalog }) {
   });
 
   window.addEventListener("resize", () => {
-    if (showcaseMode === "gallery") scheduleGalleryCamera();
+    if (showcaseMode === "gallery") {
+      galleryLayoutDirty = true;
+      scheduleGalleryCamera();
+    }
   }, { passive: true });
 
   surface.append(galleryModeSwitch, gallery);
@@ -15584,6 +15753,7 @@ function installShowcaseChrome({ root, item, catalog }) {
       subject?.removeAttribute("aria-hidden");
       navigation?.removeAttribute("aria-hidden");
       resetButton.setAttribute("aria-label", "Reset animation");
+      activeRecordingBackdropRenderer?.setSuspended?.(false);
       updateModeButtons();
     }
     commitSpecimen(initialIndex, { updateHistory });
