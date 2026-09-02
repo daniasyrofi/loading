@@ -5709,7 +5709,19 @@ function CompactLoadingFamily({ state = "braiding", paused = false } = {}) {
     const centerX = 14;
     const centerY = 14;
     const darkTheme = document.documentElement.dataset.theme === "dark";
-    const crystalColour = {
+    const recordingSurface = root.closest(".demo-surface");
+    const neutralShowcase = recordingSurface?.matches(":fullscreen, .is-recording-fallback");
+    const neutralChannels = darkTheme ? "242,243,244" : "38,42,48";
+    const crystalColour = neutralShowcase ? {
+      base: `rgba(${neutralChannels},.72)`,
+      primary: `rgba(${neutralChannels},.98)`,
+      branchStrong: `rgba(${neutralChannels},.84)`,
+      branchSoft: `rgba(${neutralChannels},.56)`,
+      fragment: `rgba(${neutralChannels},.88)`,
+      glint: `rgba(${neutralChannels},.94)`,
+      coreLine: `rgba(${neutralChannels},.7)`,
+      core: `rgba(${neutralChannels},1)`
+    } : {
       base: darkTheme ? "rgba(218,232,239,.78)" : "rgba(57,86,104,.8)",
       primary: darkTheme ? "rgba(231,244,250,.96)" : "rgba(38,78,102,.96)",
       branchStrong: darkTheme ? "rgba(207,233,246,.82)" : "rgba(58,105,131,.82)",
@@ -15128,6 +15140,7 @@ function installShowcaseChrome({ root, item, catalog }) {
   let galleryFrame = 0;
   let galleryInertiaFrame = 0;
   let galleryAnimationTimer = 0;
+  let galleryRevealTimer = 0;
   let galleryGesture = null;
   let galleryDidDrag = false;
   let galleryHasCamera = false;
@@ -15266,29 +15279,44 @@ function installShowcaseChrome({ root, item, catalog }) {
   const layoutGalleryCards = () => {
     const viewport = galleryViewportSize();
     const compact = viewport.width < 640;
-    const layoutColumns = compact ? 2 : viewport.width < 980 ? 3 : viewport.width < 1440 ? 4 : 5;
-    galleryColumnCount = layoutColumns;
-    const maxCardWidth = Math.max(240, ...galleryCards.map(({ renderedWidth }) => renderedWidth));
-    const columnWidth = Math.min(compact ? 268 : 316, Math.max(maxCardWidth, compact ? 224 : 270));
-    const columnGap = compact ? 38 : Math.min(70, Math.max(42, viewport.width * 0.03));
-    const rowGap = compact ? 48 : Math.min(68, Math.max(48, viewport.height * 0.052));
-    const stagger = [0, .58, .22, .76, .38];
-    const horizontalJitter = [-26, 30, -12, 24, -32, 17, 28, -20];
-    const verticalJitter = [0, 18, 7, 24, 11, 20];
-    const columnHeights = Array.from({ length: layoutColumns }, (_, column) => stagger[column] * rowGap);
+    const maxCardWidth = Math.max(1, ...galleryCards.map(({ renderedWidth }) => renderedWidth));
+    const maxCardHeight = Math.max(1, ...galleryCards.map(({ renderedHeight }) => renderedHeight));
+    const cellWidth = maxCardWidth + (compact ? 52 : 78);
+    const cellHeight = maxCardHeight + (compact ? 52 : 74);
+    const slots = [
+      [0, 0],
+      [-1, -1], [1, -1], [-1, 1], [1, 1],
+      [-2, 0], [2, 0], [0, -2], [0, 2],
+      [-2, -1], [2, 1], [-2, 1], [2, -1],
+      [-1, -2], [1, 2], [-1, 2], [1, -2],
+      [-3, 0], [3, 0], [-3, -1], [3, 1],
+      [-1, 3], [1, -3]
+    ];
+    const horizontalJitter = [0, -12, 10, -8, 14, -5, 7, -10, 8];
+    const verticalJitter = [0, 8, -6, 11, -9, 5, -4];
+    const currentCard = galleryCards[currentIndex];
+    const orderedAroundSelection = currentCard
+      ? [currentCard, ...galleryCards.filter((record) => record !== currentCard)]
+      : [...galleryCards];
 
-    galleryCards.forEach((record, index) => {
-      const column = columnHeights.indexOf(Math.min(...columnHeights));
-      record.worldX = column * (columnWidth + columnGap) + columnWidth / 2
-        + horizontalJitter[index % horizontalJitter.length] * (compact ? .45 : 1);
-      record.worldY = columnHeights[column] + record.renderedHeight / 2;
-      columnHeights[column] += record.renderedHeight + rowGap
-        + verticalJitter[index % verticalJitter.length] * (compact ? .55 : 1);
+    galleryColumnCount = compact ? 2 : 5;
+    orderedAroundSelection.forEach((record, slotIndex) => {
+      const [column, row] = slots[slotIndex] || [0, slotIndex];
+      const jitterScale = compact ? .55 : 1;
+      record.worldX = column * cellWidth
+        + horizontalJitter[slotIndex % horizontalJitter.length] * jitterScale;
+      record.worldY = row * cellHeight
+        + verticalJitter[slotIndex % verticalJitter.length] * jitterScale;
+      record.revealDistance = Math.hypot(column, row);
+      record.card.style.setProperty(
+        "--gallery-reveal-delay",
+        `${Math.min(240, Math.round(record.revealDistance * 54))}ms`
+      );
     });
 
     galleryWorldSize = {
-      width: layoutColumns * columnWidth + (layoutColumns - 1) * columnGap,
-      height: Math.max(...columnHeights) - rowGap + 24
+      width: cellWidth * 7,
+      height: cellHeight * 7
     };
     galleryLayoutDirty = false;
   };
@@ -15308,8 +15336,8 @@ function installShowcaseChrome({ root, item, catalog }) {
 
     galleryCards.forEach((record) => {
       const { card, renderedWidth: width, renderedHeight: height } = record;
-      const worldX = record.worldX - worldWidth / 2;
-      const worldY = record.worldY - worldHeight / 2;
+      const worldX = record.worldX;
+      const worldY = record.worldY;
       const x = centreX + wrapGalleryCoordinate(worldX + galleryCamera.x, worldWidth) - width / 2;
       const y = centreY + wrapGalleryCoordinate(worldY + galleryCamera.y, worldHeight) - height / 2;
       const visible = x + width > -overscan
@@ -15455,6 +15483,8 @@ function installShowcaseChrome({ root, item, catalog }) {
       gallery.focus({ preventScroll: true });
     } else {
       stopGalleryInertia();
+      window.clearTimeout(galleryRevealTimer);
+      surface.classList.remove("is-gallery-cascade", "is-gallery-revealing");
       restoreGalleryPanels();
       showcaseMode = "single";
       surface.classList.remove("is-gallery-mode", "is-gallery-ready");
@@ -15478,11 +15508,15 @@ function installShowcaseChrome({ root, item, catalog }) {
     surface.classList.add("is-gallery-revealing");
     await runPanelTransition({
       panel: currentRecord?.panel,
-      mutate: () => setShowcaseMode("gallery", { immediateReady: true }),
-      onReady: () => surface.classList.remove("is-gallery-revealing")
+      mutate: () => setShowcaseMode("gallery", { immediateReady: true })
     });
+    surface.classList.add("is-gallery-cascade");
     currentCard?.card.classList.remove("is-gallery-selected");
     surface.classList.remove("is-gallery-revealing");
+    window.clearTimeout(galleryRevealTimer);
+    galleryRevealTimer = window.setTimeout(() => {
+      surface.classList.remove("is-gallery-cascade");
+    }, reduceShowcaseMotion() ? 0 : 520);
     gallerySelectionPending = false;
   }
 
@@ -15493,7 +15527,7 @@ function installShowcaseChrome({ root, item, catalog }) {
     surface.classList.add("is-gallery-selecting");
     centerGalleryCard(record, { animate: true });
     if (!reduceShowcaseMotion()) {
-      await new Promise((resolve) => window.setTimeout(resolve, 220));
+      await new Promise((resolve) => window.setTimeout(resolve, 340));
     }
     await runPanelTransition({
       panel: record.record.panel,

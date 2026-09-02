@@ -5407,19 +5407,12 @@ dialog:focus-visible {
   display: block;
   overflow: hidden;
   cursor: grab;
-  opacity: 0;
-  scale: 1.035;
-  filter: blur(2px);
+  opacity: 1;
   touch-action: none;
-  transition-property: opacity, scale, filter;
-  transition-duration: 220ms;
-  transition-timing-function: cubic-bezier(.2, 0, 0, 1);
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode.is-gallery-ready > .showcase-gallery {
   opacity: 1;
-  scale: 1;
-  filter: blur(0);
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode > .showcase-gallery:active {
@@ -5434,8 +5427,8 @@ dialog:focus-visible {
 }
 
 .showcase-gallery__world.is-camera-animating .showcase-gallery-card {
-  transition-property: transform, opacity;
-  transition-duration: 320ms;
+  transition-property: transform, opacity, scale, filter;
+  transition-duration: 340ms;
   transition-timing-function: cubic-bezier(.22, 1, .36, 1);
 }
 
@@ -5457,6 +5450,10 @@ dialog:focus-visible {
 .is-gallery-ready .showcase-gallery-card.is-gallery-visible {
   visibility: visible;
   opacity: 1;
+}
+
+.is-gallery-cascade .showcase-gallery-card.is-gallery-visible {
+  transition-delay: var(--gallery-reveal-delay, 0ms);
 }
 
 .is-gallery-ready .showcase-gallery-card:not(.is-gallery-visible) {
@@ -5507,8 +5504,8 @@ dialog:focus-visible {
 .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-selecting
   .showcase-gallery-card:not(.is-gallery-selected) {
   opacity: 0;
-  scale: .96;
-  filter: blur(3px);
+  scale: .92;
+  filter: blur(4px);
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback)
@@ -20140,6 +20137,53 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
 
 /* Gallery only positions the Single specimen component on the 2D canvas.
    Every visual surface continues to come from the Single component rules. */
+.is-showcase-detail .demo-surface:is(:fullscreen, .is-recording-fallback),
+.demo-surface:is(:fullscreen, .is-recording-fallback) .showcase-gallery-card {
+  --ink: #f2f3f4;
+  --accent: #f2f3f4;
+  --accent-hover: #fff;
+  --accent-soft: rgb(255 255 255 / 14%);
+  --accent-tint: rgb(255 255 255 / 12%);
+  --success: #f2f3f4;
+  --success-tint: rgb(255 255 255 / 12%);
+  --danger: #f2f3f4;
+  --danger-tint: rgb(255 255 255 / 12%);
+}
+
+:root:not([data-theme="dark"]) :is(
+  .is-showcase-detail .demo-surface:is(:fullscreen, .is-recording-fallback),
+  .demo-surface:is(:fullscreen, .is-recording-fallback) .showcase-gallery-card
+) {
+  --ink: #262a30;
+  --accent: #262a30;
+  --accent-hover: #171a1f;
+  --accent-soft: rgb(0 0 0 / 10%);
+  --accent-tint: rgb(0 0 0 / 8%);
+  --success: #262a30;
+  --success-tint: rgb(0 0 0 / 8%);
+  --danger: #262a30;
+  --danger-tint: rgb(0 0 0 / 8%);
+}
+
+.compact-loading-family-crystallizing-specimen
+  .demo-surface:is(:fullscreen, .is-recording-fallback)
+  .compact-loading-family__mark canvas {
+  filter: none;
+}
+
+.beacon-stack-specimen
+  .demo-surface:is(:fullscreen, .is-recording-fallback)
+  .beacon-indicator {
+  overflow: hidden;
+  contain: paint;
+}
+
+.beacon-stack-specimen
+  .demo-surface:is(:fullscreen, .is-recording-fallback)
+  .beacon-indicator__bar {
+  flex: 0 0 2px;
+}
+
 .demo-surface:is(:fullscreen, .is-recording-fallback)
   .showcase-gallery-card.recording-subject {
   position: absolute;
@@ -20147,6 +20191,9 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   max-height: none;
   opacity: 0;
   scale: 1;
+  transition-property: opacity, scale, filter, box-shadow;
+  transition-duration: 240ms;
+  transition-timing-function: cubic-bezier(.22, 1, .36, 1);
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-ready
