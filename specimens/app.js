@@ -15106,36 +15106,21 @@ function installShowcaseChrome({ root, item, catalog }) {
   };
 
   const gallery = createElement("div", "showcase-gallery");
+  const galleryOrb = createElement("div", "showcase-gallery__orb");
   const galleryWorld = createElement("div", "showcase-gallery__world");
   const galleryModeSwitch = createElement("div", "showcase-mode-switch");
-  const galleryZoomControls = createElement("div", "showcase-gallery-zoom");
   const singleModeButton = createElement("button", "showcase-mode-button", "Single");
   const galleryModeButton = createElement("button", "showcase-mode-button", "Gallery");
-  const zoomOutButton = createShowcaseControl("showcase-gallery-zoom__button", "Zoom out", "&minus;");
-  const zoomReadout = createElement("span", "showcase-gallery-zoom__value", "100%");
-  const zoomInButton = createShowcaseControl("showcase-gallery-zoom__button", "Zoom in", "+");
-  const fitButton = createShowcaseControl(
-    "showcase-gallery-zoom__button showcase-gallery-zoom__fit",
-    "Fit all loading experiments",
-    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path>
-    </svg>`
-  );
   const galleryCards = [];
   const galleryColumns = 5;
-  const galleryCellWidth = 360;
-  const galleryCellHeight = 238;
-  const galleryPadding = 72;
-  const galleryWorldWidth = galleryPadding * 2 + galleryCellWidth * galleryColumns;
-  const galleryRows = Math.ceil(ordered.length / galleryColumns);
-  const galleryWorldHeight = galleryPadding * 2 + galleryCellHeight * galleryRows;
-  const galleryWidths = [304, 326, 294, 318, 306, 322, 298, 328];
-  const galleryHeights = [188, 212, 196, 204, 190, 216, 198, 208];
-  const galleryRowOffsets = [0, 28, -18, 18, -8];
-  const galleryColumnOffsets = [4, -12, 14, -6, 10];
-  const galleryCamera = { x: 0, y: 0, scale: 1 };
+  const galleryWidths = [294, 310, 286, 304, 292, 308, 288, 312];
+  const galleryHeights = [136, 142, 132, 140, 134, 144, 136, 142];
+  const galleryGoldenAngle = Math.PI * (3 - Math.sqrt(5));
+  const galleryCamera = { yaw: 0, pitch: 0 };
+  const galleryVelocity = { yaw: 0, pitch: 0 };
   const galleryPointers = new Map();
   let galleryFrame = 0;
+  let galleryInertiaFrame = 0;
   let galleryAnimationTimer = 0;
   let galleryGesture = null;
   let galleryDidDrag = false;
@@ -15146,10 +15131,9 @@ function installShowcaseChrome({ root, item, catalog }) {
   gallery.hidden = true;
   gallery.tabIndex = 0;
   gallery.setAttribute("role", "region");
-  gallery.setAttribute("aria-label", "Infinite loading gallery. Drag to pan, pinch or use the controls to zoom.");
-  galleryWorld.style.width = `${galleryWorldWidth}px`;
-  galleryWorld.style.height = `${galleryWorldHeight}px`;
-  gallery.append(galleryWorld);
+  gallery.setAttribute("aria-label", "Loading world. Drag in any direction to explore.");
+  galleryOrb.setAttribute("aria-hidden", "true");
+  gallery.append(galleryOrb, galleryWorld);
 
   galleryModeSwitch.setAttribute("role", "group");
   galleryModeSwitch.setAttribute("aria-label", "Fullscreen view mode");
@@ -15157,11 +15141,6 @@ function installShowcaseChrome({ root, item, catalog }) {
     button.type = "button";
     galleryModeSwitch.append(button);
   });
-
-  galleryZoomControls.setAttribute("role", "group");
-  galleryZoomControls.setAttribute("aria-label", "Gallery zoom controls");
-  zoomReadout.setAttribute("aria-live", "polite");
-  galleryZoomControls.append(zoomOutButton, zoomReadout, zoomInButton, fitButton);
 
   const updateModeButtons = () => {
     singleModeButton.setAttribute("aria-pressed", String(showcaseMode === "single"));
@@ -15173,51 +15152,69 @@ function installShowcaseChrome({ root, item, catalog }) {
     galleryWorld.classList.remove("is-camera-animating");
   };
 
+  const stopGalleryInertia = () => {
+    if (galleryInertiaFrame) window.cancelAnimationFrame(galleryInertiaFrame);
+    galleryInertiaFrame = 0;
+    galleryVelocity.yaw = 0;
+    galleryVelocity.pitch = 0;
+  };
+
   const galleryViewportSize = () => ({
     width: Math.max(1, gallery.clientWidth),
     height: Math.max(1, gallery.clientHeight)
   });
 
-  const clampGalleryCamera = () => {
-    const viewport = galleryViewportSize();
-    const scaledWidth = galleryWorldWidth * galleryCamera.scale;
-    const scaledHeight = galleryWorldHeight * galleryCamera.scale;
-    const margin = Math.min(88, viewport.width * 0.14, viewport.height * 0.14);
+  const wrapAngle = (angle) => Math.atan2(Math.sin(angle), Math.cos(angle));
 
-    if (scaledWidth <= viewport.width - margin * 2) {
-      galleryCamera.x = (viewport.width - scaledWidth) / 2;
-    } else {
-      galleryCamera.x = Math.min(margin, Math.max(viewport.width - margin - scaledWidth, galleryCamera.x));
-    }
-    if (scaledHeight <= viewport.height - margin * 2) {
-      galleryCamera.y = (viewport.height - scaledHeight) / 2;
-    } else {
-      galleryCamera.y = Math.min(margin, Math.max(viewport.height - margin - scaledHeight, galleryCamera.y));
-    }
-  };
-
-  const updateGalleryVisibility = () => {
+  const renderGalleryCards = () => {
     const viewport = galleryViewportSize();
-    const preloadMargin = 120;
-    galleryCards.forEach(({ card, x, y, width, height }) => {
-      const left = galleryCamera.x + x * galleryCamera.scale;
-      const top = galleryCamera.y + y * galleryCamera.scale;
-      const right = left + width * galleryCamera.scale;
-      const bottom = top + height * galleryCamera.scale;
-      const visible = right >= 0 && bottom >= 0 && left <= viewport.width && top <= viewport.height;
-      const near = right >= -preloadMargin && bottom >= -preloadMargin
-        && left <= viewport.width + preloadMargin && top <= viewport.height + preloadMargin;
-      card.classList.toggle("is-gallery-visible", visible);
-      card.classList.toggle("is-gallery-sleeping", !near);
+    const compact = viewport.width < 640;
+    const radiusX = Math.max(250, viewport.width * (compact ? 0.82 : 0.44));
+    const radiusY = Math.max(250, viewport.height * (compact ? 0.48 : 0.44));
+    const centreX = viewport.width / 2;
+    const centreY = viewport.height / 2 + (compact ? 28 : 12);
+    const cosYaw = Math.cos(galleryCamera.yaw);
+    const sinYaw = Math.sin(galleryCamera.yaw);
+    const cosPitch = Math.cos(galleryCamera.pitch);
+    const sinPitch = Math.sin(galleryCamera.pitch);
+
+    galleryOrb.style.setProperty("--gallery-orb-size", `${Math.round(Math.min(radiusX * 1.72, radiusY * 2.08))}px`);
+
+    galleryCards.forEach(({ card, longitude, latitude, width, height }) => {
+      const cosLatitude = Math.cos(latitude);
+      const baseX = cosLatitude * Math.sin(longitude);
+      const baseY = Math.sin(latitude);
+      const baseZ = cosLatitude * Math.cos(longitude);
+      const yawX = baseX * cosYaw + baseZ * sinYaw;
+      const yawZ = -baseX * sinYaw + baseZ * cosYaw;
+      const rotatedY = baseY * cosPitch - yawZ * sinPitch;
+      const rotatedZ = baseY * sinPitch + yawZ * cosPitch;
+      const depth = Math.max(0, Math.min(1, (rotatedZ + 1) / 2));
+      const cardScale = (compact ? 0.46 : 0.54) + depth * (compact ? 0.28 : 0.42);
+      const x = centreX + yawX * radiusX - width / 2;
+      const y = centreY - rotatedY * radiusY - height / 2;
+      const frontThreshold = compact ? 0.22 : 0.06;
+      const front = rotatedZ > frontThreshold;
+      const opacity = front
+        ? Math.max(0.26, Math.min(1, (rotatedZ - frontThreshold + 0.04) / (compact ? 0.38 : 0.46)))
+        : 0;
+
+      card.style.zIndex = String(10 + Math.round(depth * 90));
+      card.style.setProperty("--gallery-depth-opacity", opacity.toFixed(3));
+      card.style.setProperty("--gallery-depth-blur", `${((1 - depth) * 1.4).toFixed(2)}px`);
+      card.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${cardScale})`;
+      card.dataset.galleryDepth = depth.toFixed(3);
+      card.classList.toggle("is-gallery-visible", front);
+      card.classList.toggle("is-gallery-back", !front);
+      card.classList.toggle("is-gallery-sleeping", rotatedZ < frontThreshold);
     });
   };
 
   const renderGalleryCamera = () => {
     galleryFrame = 0;
-    clampGalleryCamera();
-    galleryWorld.style.transform = `translate3d(${galleryCamera.x}px, ${galleryCamera.y}px, 0) scale(${galleryCamera.scale})`;
-    zoomReadout.textContent = `${Math.round(galleryCamera.scale * 100)}%`;
-    updateGalleryVisibility();
+    galleryCamera.yaw = wrapAngle(galleryCamera.yaw);
+    galleryCamera.pitch = wrapAngle(galleryCamera.pitch);
+    renderGalleryCards();
   };
 
   const scheduleGalleryCamera = () => {
@@ -15225,71 +15222,39 @@ function installShowcaseChrome({ root, item, catalog }) {
     galleryFrame = window.requestAnimationFrame(renderGalleryCamera);
   };
 
-  const setGalleryCamera = ({ x, y, scale }, { animate = false } = {}) => {
+  const setGalleryCamera = ({ yaw, pitch }, { animate = false } = {}) => {
+    stopGalleryInertia();
     stopGalleryCameraAnimation();
-    galleryCamera.x = x;
-    galleryCamera.y = y;
-    galleryCamera.scale = Math.min(1.6, Math.max(0.18, scale));
+    galleryCamera.yaw = Number.isFinite(yaw) ? yaw : galleryCamera.yaw;
+    galleryCamera.pitch = Number.isFinite(pitch) ? pitch : galleryCamera.pitch;
     if (animate && document.documentElement.dataset.motion !== "reduce") {
       galleryWorld.classList.add("is-camera-animating");
       galleryAnimationTimer = window.setTimeout(() => {
         galleryWorld.classList.remove("is-camera-animating");
-        updateGalleryVisibility();
+        renderGalleryCards();
       }, 340);
     }
     scheduleGalleryCamera();
   };
 
   fitShowcaseGallery = ({ animate = false } = {}) => {
-    const viewport = galleryViewportSize();
-    const inset = viewport.width < 640 ? 40 : 96;
-    const scale = Math.min(
-      0.86,
-      (viewport.width - inset) / galleryWorldWidth,
-      (viewport.height - inset) / galleryWorldHeight
-    );
-    setGalleryCamera({
-      x: (viewport.width - galleryWorldWidth * scale) / 2,
-      y: (viewport.height - galleryWorldHeight * scale) / 2,
-      scale
-    }, { animate });
+    setGalleryCamera({ yaw: 0.28, pitch: -0.08 }, { animate });
     galleryHasCamera = true;
   };
 
   const frameShowcaseGallery = ({ animate = false } = {}) => {
-    const viewport = galleryViewportSize();
-    const fitScale = Math.min(
-      (viewport.width - (viewport.width < 640 ? 40 : 96)) / galleryWorldWidth,
-      (viewport.height - (viewport.width < 640 ? 40 : 96)) / galleryWorldHeight
-    );
-    const scale = Math.min(0.72, Math.max(0.48, fitScale * 1.45));
-    const topInset = viewport.width < 640 ? 124 : 82;
-    setGalleryCamera({
-      x: viewport.width / 2 - galleryWorldWidth * scale / 2,
-      y: topInset - galleryPadding * scale,
-      scale
-    }, { animate });
+    setGalleryCamera({ yaw: 0.28, pitch: -0.08 }, { animate });
     galleryHasCamera = true;
   };
 
-  const zoomGalleryAt = (nextScale, screenX, screenY, { animate = false } = {}) => {
-    const scale = Math.min(1.6, Math.max(0.18, nextScale));
-    const worldX = (screenX - galleryCamera.x) / galleryCamera.scale;
-    const worldY = (screenY - galleryCamera.y) / galleryCamera.scale;
+  const centerGalleryCard = (record, { animate = true } = {}) => {
+    const targetYaw = -record.longitude;
+    const targetPitch = record.latitude;
+    const nearestYaw = galleryCamera.yaw + wrapAngle(targetYaw - galleryCamera.yaw);
+    const nearestPitch = galleryCamera.pitch + wrapAngle(targetPitch - galleryCamera.pitch);
     setGalleryCamera({
-      x: screenX - worldX * scale,
-      y: screenY - worldY * scale,
-      scale
-    }, { animate });
-  };
-
-  const centerGalleryCard = (record, { animate = true, focusScale } = {}) => {
-    const viewport = galleryViewportSize();
-    const scale = focusScale || Math.min(1.12, Math.max(0.72, galleryCamera.scale));
-    setGalleryCamera({
-      x: viewport.width / 2 - (record.x + record.width / 2) * scale,
-      y: viewport.height / 2 - (record.y + record.height / 2) * scale,
-      scale
+      yaw: nearestYaw,
+      pitch: nearestPitch
     }, { animate });
   };
 
@@ -15301,15 +15266,13 @@ function installShowcaseChrome({ root, item, catalog }) {
     const cardSurface = createElement("div", "showcase-gallery-card__surface demo-surface");
     const cardContent = createElement("div", "showcase-gallery-card__content");
     const cardButton = createElement("button", "showcase-gallery-card__hit");
-    const column = index % galleryColumns;
-    const row = Math.floor(index / galleryColumns);
     const width = galleryWidths[index % galleryWidths.length];
     const height = galleryHeights[index % galleryHeights.length];
-    const x = galleryPadding + column * galleryCellWidth + galleryRowOffsets[row % galleryRowOffsets.length];
-    const y = galleryPadding + row * galleryCellHeight + galleryColumnOffsets[column % galleryColumnOffsets.length];
+    const latitude = Math.asin(1 - 2 * ((index + 0.5) / ordered.length));
+    const longitude = wrapAngle(index * galleryGoldenAngle + (index % 3) * 0.08);
 
-    card.style.left = `${x}px`;
-    card.style.top = `${y}px`;
+    card.style.left = "0";
+    card.style.top = "0";
     card.style.width = `${width}px`;
     card.style.height = `${height}px`;
     card.style.setProperty("--gallery-order", index);
@@ -15321,10 +15284,7 @@ function installShowcaseChrome({ root, item, catalog }) {
         return;
       }
       gallerySelectionPending = true;
-      centerGalleryCard({ x, y, width, height }, {
-        animate: true,
-        focusScale: Math.min(1.18, Math.max(0.86, galleryCamera.scale))
-      });
+      centerGalleryCard({ longitude, latitude }, { animate: true });
       surface.classList.add("is-gallery-selecting");
       if (document.documentElement.dataset.motion !== "reduce") {
         await new Promise((resolve) => window.setTimeout(resolve, 260));
@@ -15335,7 +15295,7 @@ function installShowcaseChrome({ root, item, catalog }) {
     });
     cardButton.addEventListener("focus", () => {
       if (showcaseMode === "gallery" && !card.classList.contains("is-gallery-visible")) {
-        centerGalleryCard({ x, y, width, height }, { animate: true, focusScale: galleryCamera.scale });
+        centerGalleryCard({ longitude, latitude }, { animate: true });
       }
     });
     cardButton.addEventListener("keydown", (event) => {
@@ -15349,7 +15309,18 @@ function installShowcaseChrome({ root, item, catalog }) {
     cardSurface.append(cardContent);
     card.append(cardSurface, cardButton);
     galleryWorld.append(card);
-    galleryCards.push({ card, button: cardButton, content: cardContent, entry, record, index, x, y, width, height });
+    galleryCards.push({
+      card,
+      button: cardButton,
+      content: cardContent,
+      entry,
+      record,
+      index,
+      longitude,
+      latitude,
+      width,
+      height
+    });
   });
 
   const restoreGalleryPanels = () => {
@@ -15374,13 +15345,14 @@ function installShowcaseChrome({ root, item, catalog }) {
       gallery.hidden = false;
       subject?.setAttribute("aria-hidden", "true");
       navigation?.setAttribute("aria-hidden", "true");
-      resetButton.setAttribute("aria-label", "Fit all loading experiments");
+      resetButton.setAttribute("aria-label", "Reset loading world view");
       surface.classList.add("is-gallery-mode");
       if (!galleryHasCamera) frameShowcaseGallery();
       else scheduleGalleryCamera();
       window.requestAnimationFrame(() => surface.classList.add("is-gallery-ready"));
       gallery.focus({ preventScroll: true });
     } else {
+      stopGalleryInertia();
       restoreGalleryPanels();
       showcaseMode = "single";
       surface.classList.remove("is-gallery-mode", "is-gallery-ready");
@@ -15396,63 +15368,62 @@ function installShowcaseChrome({ root, item, catalog }) {
 
   singleModeButton.addEventListener("click", () => setShowcaseMode("single", { updateHistory: false }));
   galleryModeButton.addEventListener("click", () => setShowcaseMode("gallery"));
-  zoomOutButton.addEventListener("click", () => {
-    const viewport = galleryViewportSize();
-    zoomGalleryAt(galleryCamera.scale / 1.2, viewport.width / 2, viewport.height / 2, { animate: true });
-  });
-  zoomInButton.addEventListener("click", () => {
-    const viewport = galleryViewportSize();
-    zoomGalleryAt(galleryCamera.scale * 1.2, viewport.width / 2, viewport.height / 2, { animate: true });
-  });
-  fitButton.addEventListener("click", () => fitShowcaseGallery({ animate: true }));
 
   gallery.addEventListener("wheel", (event) => {
     if (showcaseMode !== "gallery") return;
     event.preventDefault();
+    stopGalleryInertia();
     stopGalleryCameraAnimation();
-    const bounds = gallery.getBoundingClientRect();
-    if (event.ctrlKey || event.metaKey) {
-      const factor = Math.exp(-event.deltaY * 0.003);
-      zoomGalleryAt(galleryCamera.scale * factor, event.clientX - bounds.left, event.clientY - bounds.top);
-    } else {
-      galleryCamera.x -= event.deltaX || (event.shiftKey ? event.deltaY : 0);
-      galleryCamera.y -= event.shiftKey ? 0 : event.deltaY;
-      scheduleGalleryCamera();
-    }
+    const horizontal = event.deltaX || (event.shiftKey ? event.deltaY : 0);
+    const vertical = event.shiftKey ? 0 : event.deltaY;
+    galleryCamera.yaw -= horizontal * 0.0024;
+    galleryCamera.pitch += vertical * 0.0022;
+    scheduleGalleryCamera();
   }, { passive: false });
-
-  const pointerDistance = (points) => Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
-  const pointerCenter = (points) => ({ x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 });
   const beginGalleryPan = (point) => {
     galleryGesture = {
       type: "pan",
-      startX: point.x,
-      startY: point.y,
-      cameraX: galleryCamera.x,
-      cameraY: galleryCamera.y
+      lastX: point.x,
+      lastY: point.y,
+      lastTime: performance.now()
     };
   };
-  const beginGalleryPinch = () => {
-    const points = [...galleryPointers.values()].slice(0, 2);
-    const center = pointerCenter(points);
-    galleryGesture = {
-      type: "pinch",
-      distance: Math.max(1, pointerDistance(points)),
-      scale: galleryCamera.scale,
-      worldX: (center.x - galleryCamera.x) / galleryCamera.scale,
-      worldY: (center.y - galleryCamera.y) / galleryCamera.scale
+
+  const startGalleryInertia = () => {
+    if (document.documentElement.dataset.motion === "reduce") return;
+    if (Math.hypot(galleryVelocity.yaw, galleryVelocity.pitch) < 0.00008) return;
+    let previousTime = performance.now();
+    const tick = (time) => {
+      if (showcaseMode !== "gallery" || galleryPointers.size) {
+        galleryInertiaFrame = 0;
+        return;
+      }
+      const delta = Math.min(34, Math.max(1, time - previousTime));
+      previousTime = time;
+      galleryCamera.yaw += galleryVelocity.yaw * delta;
+      galleryCamera.pitch += galleryVelocity.pitch * delta;
+      const friction = Math.pow(0.925, delta / 16.67);
+      galleryVelocity.yaw *= friction;
+      galleryVelocity.pitch *= friction;
+      scheduleGalleryCamera();
+      if (Math.hypot(galleryVelocity.yaw, galleryVelocity.pitch) > 0.000025) {
+        galleryInertiaFrame = window.requestAnimationFrame(tick);
+      } else {
+        galleryInertiaFrame = 0;
+      }
     };
+    galleryInertiaFrame = window.requestAnimationFrame(tick);
   };
 
   gallery.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
+    stopGalleryInertia();
     stopGalleryCameraAnimation();
     const bounds = gallery.getBoundingClientRect();
     const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
     galleryPointers.set(event.pointerId, point);
     galleryDidDrag = false;
     if (galleryPointers.size === 1) beginGalleryPan(point);
-    else if (galleryPointers.size === 2) beginGalleryPinch();
   });
 
   gallery.addEventListener("pointermove", (event) => {
@@ -15460,30 +15431,33 @@ function installShowcaseChrome({ root, item, catalog }) {
     const bounds = gallery.getBoundingClientRect();
     const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
     galleryPointers.set(event.pointerId, point);
-    if (galleryPointers.size >= 2 && galleryGesture?.type === "pinch") {
-      const points = [...galleryPointers.values()].slice(0, 2);
-      const center = pointerCenter(points);
-      const scale = Math.min(1.6, Math.max(0.18, galleryGesture.scale * pointerDistance(points) / galleryGesture.distance));
-      galleryCamera.scale = scale;
-      galleryCamera.x = center.x - galleryGesture.worldX * scale;
-      galleryCamera.y = center.y - galleryGesture.worldY * scale;
-      galleryDidDrag = true;
-      scheduleGalleryCamera();
-      return;
-    }
+    if (galleryPointers.size !== 1) return;
     if (galleryGesture?.type !== "pan") return;
-    const dx = point.x - galleryGesture.startX;
-    const dy = point.y - galleryGesture.startY;
+    const now = performance.now();
+    const dx = point.x - galleryGesture.lastX;
+    const dy = point.y - galleryGesture.lastY;
+    const delta = Math.max(8, now - galleryGesture.lastTime);
     if (Math.hypot(dx, dy) > 4) galleryDidDrag = true;
-    galleryCamera.x = galleryGesture.cameraX + dx;
-    galleryCamera.y = galleryGesture.cameraY + dy;
+    const viewport = galleryViewportSize();
+    const yawDelta = dx / viewport.width * 3.6;
+    const pitchDelta = -dy / viewport.height * 3.2;
+    galleryCamera.yaw += yawDelta;
+    galleryCamera.pitch += pitchDelta;
+    galleryVelocity.yaw = galleryVelocity.yaw * 0.35 + yawDelta / delta * 0.65;
+    galleryVelocity.pitch = galleryVelocity.pitch * 0.35 + pitchDelta / delta * 0.65;
+    galleryGesture.lastX = point.x;
+    galleryGesture.lastY = point.y;
+    galleryGesture.lastTime = now;
     scheduleGalleryCamera();
   });
 
   const endGalleryPointer = (event) => {
     galleryPointers.delete(event.pointerId);
     if (galleryPointers.size === 1) beginGalleryPan([...galleryPointers.values()][0]);
-    else galleryGesture = null;
+    else {
+      galleryGesture = null;
+      if (galleryDidDrag) startGalleryInertia();
+    }
     window.setTimeout(() => { galleryDidDrag = false; }, 0);
   };
   gallery.addEventListener("pointerup", endGalleryPointer);
@@ -15491,14 +15465,7 @@ function installShowcaseChrome({ root, item, catalog }) {
 
   gallery.addEventListener("keydown", (event) => {
     if (event.target !== gallery) return;
-    const viewport = galleryViewportSize();
-    if (["+", "="].includes(event.key)) {
-      event.preventDefault();
-      zoomGalleryAt(galleryCamera.scale * 1.2, viewport.width / 2, viewport.height / 2, { animate: true });
-    } else if (event.key === "-") {
-      event.preventDefault();
-      zoomGalleryAt(galleryCamera.scale / 1.2, viewport.width / 2, viewport.height / 2, { animate: true });
-    } else if (event.key === "0" || event.key === "Home") {
+    if (event.key === "0" || event.key === "Home") {
       event.preventDefault();
       fitShowcaseGallery({ animate: true });
     } else if (event.key === "Escape") {
@@ -15507,11 +15474,12 @@ function installShowcaseChrome({ root, item, catalog }) {
       setShowcaseMode("single", { updateHistory: false });
     } else if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
       event.preventDefault();
-      const amount = event.shiftKey ? 180 : 72;
-      if (event.key === "ArrowLeft") galleryCamera.x += amount;
-      if (event.key === "ArrowRight") galleryCamera.x -= amount;
-      if (event.key === "ArrowUp") galleryCamera.y += amount;
-      if (event.key === "ArrowDown") galleryCamera.y -= amount;
+      stopGalleryInertia();
+      const amount = event.shiftKey ? 0.42 : 0.18;
+      if (event.key === "ArrowLeft") galleryCamera.yaw += amount;
+      if (event.key === "ArrowRight") galleryCamera.yaw -= amount;
+      if (event.key === "ArrowUp") galleryCamera.pitch += amount;
+      if (event.key === "ArrowDown") galleryCamera.pitch -= amount;
       scheduleGalleryCamera();
     }
   });
@@ -15520,7 +15488,7 @@ function installShowcaseChrome({ root, item, catalog }) {
     if (showcaseMode === "gallery") scheduleGalleryCamera();
   }, { passive: true });
 
-  surface.append(galleryModeSwitch, gallery, galleryZoomControls);
+  surface.append(galleryModeSwitch, gallery);
   updateModeButtons();
 
   const updateSpecimenMetadata = (entry, record) => {
@@ -15633,6 +15601,7 @@ function installShowcaseChrome({ root, item, catalog }) {
   updateNavigation();
 
   restoreShowcaseContent = ({ updateHistory = false } = {}) => {
+    stopGalleryInertia();
     if (showcaseMode === "gallery") {
       restoreGalleryPanels();
       showcaseMode = "single";
