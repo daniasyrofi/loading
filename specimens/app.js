@@ -15106,15 +15106,14 @@ function installShowcaseChrome({ root, item, catalog }) {
   };
 
   const gallery = createElement("div", "showcase-gallery");
-  const galleryOrb = createElement("div", "showcase-gallery__orb");
   const galleryWorld = createElement("div", "showcase-gallery__world");
   const galleryModeSwitch = createElement("div", "showcase-mode-switch");
   const singleModeButton = createElement("button", "showcase-mode-button", "Single");
   const galleryModeButton = createElement("button", "showcase-mode-button", "Gallery");
   const galleryCards = [];
   const galleryColumns = 5;
-  const galleryWidths = [294, 310, 286, 304, 292, 308, 288, 312];
-  const galleryHeights = [136, 142, 132, 140, 134, 144, 136, 142];
+  const galleryWidths = [364, 380, 352, 372, 360, 378, 354, 382];
+  const galleryHeights = [116, 122, 112, 120, 114, 122, 116, 120];
   const galleryGoldenAngle = Math.PI * (3 - Math.sqrt(5));
   const galleryCamera = { yaw: 0, pitch: 0 };
   const galleryVelocity = { yaw: 0, pitch: 0 };
@@ -15132,8 +15131,7 @@ function installShowcaseChrome({ root, item, catalog }) {
   gallery.tabIndex = 0;
   gallery.setAttribute("role", "region");
   gallery.setAttribute("aria-label", "Loading world. Drag in any direction to explore.");
-  galleryOrb.setAttribute("aria-hidden", "true");
-  gallery.append(galleryOrb, galleryWorld);
+  gallery.append(galleryWorld);
 
   galleryModeSwitch.setAttribute("role", "group");
   galleryModeSwitch.setAttribute("aria-label", "Fullscreen view mode");
@@ -15177,8 +15175,6 @@ function installShowcaseChrome({ root, item, catalog }) {
     const sinYaw = Math.sin(galleryCamera.yaw);
     const cosPitch = Math.cos(galleryCamera.pitch);
     const sinPitch = Math.sin(galleryCamera.pitch);
-
-    galleryOrb.style.setProperty("--gallery-orb-size", `${Math.round(Math.min(radiusX * 1.72, radiusY * 2.08))}px`);
 
     galleryCards.forEach(({ card, longitude, latitude, width, height }) => {
       const cosLatitude = Math.cos(latitude);

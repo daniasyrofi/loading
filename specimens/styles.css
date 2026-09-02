@@ -5406,19 +5406,12 @@ dialog:focus-visible {
   inset: 0;
   display: block;
   overflow: hidden;
-  background: #080809;
   cursor: grab;
   opacity: 0;
   touch-action: none;
   transition-property: opacity;
   transition-duration: 220ms;
   transition-timing-function: cubic-bezier(.2, 0, 0, 1);
-}
-
-:root[data-theme="light"]
-  .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode
-  > .showcase-gallery {
-  background: #f1f1f2;
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode.is-gallery-ready > .showcase-gallery {
@@ -5438,38 +5431,6 @@ dialog:focus-visible {
   transform-style: preserve-3d;
 }
 
-.showcase-gallery__orb {
-  --gallery-orb-size: min(68vw, 76vh);
-  position: absolute;
-  z-index: 0;
-  top: 50%;
-  left: 50%;
-  width: var(--gallery-orb-size);
-  aspect-ratio: 1;
-  overflow: hidden;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 44% 38%, rgb(255 255 255 / 5%), rgb(14 14 15 / 48%) 68%, rgb(4 4 5 / 70%)),
-    repeating-radial-gradient(ellipse at center, transparent 0 8.8%, rgb(255 255 255 / 5%) 9%, transparent 9.35%),
-    repeating-linear-gradient(90deg, transparent 0 9.7%, rgb(255 255 255 / 4%) 9.9%, transparent 10.2%);
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 6%),
-    inset 0 0 96px rgb(255 255 255 / 3%);
-  opacity: .66;
-  pointer-events: none;
-  translate: -50% -48%;
-}
-
-:root[data-theme="light"] .showcase-gallery__orb {
-  background:
-    radial-gradient(circle at 44% 38%, rgb(255 255 255 / 92%), rgb(239 239 240 / 72%) 68%, rgb(225 225 227 / 58%)),
-    repeating-radial-gradient(ellipse at center, transparent 0 8.8%, rgb(20 20 22 / 6%) 9%, transparent 9.35%),
-    repeating-linear-gradient(90deg, transparent 0 9.7%, rgb(20 20 22 / 5%) 9.9%, transparent 10.2%);
-  box-shadow:
-    inset 0 0 0 1px rgb(20 20 22 / 7%),
-    inset 0 0 96px rgb(20 20 22 / 5%);
-}
-
 .showcase-gallery__world.is-camera-animating .showcase-gallery-card {
   transition-property: transform, opacity, filter, box-shadow;
   transition-duration: 320ms;
@@ -5480,11 +5441,11 @@ dialog:focus-visible {
   position: absolute;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 20px;
-  background: rgb(19 19 20 / 96%);
+  border-radius: 22px;
+  background: rgb(34 34 36 / 96%);
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 10%),
-    0 14px 38px rgb(0 0 0 / 18%);
+    0 16px 42px rgb(0 0 0 / 20%);
   backface-visibility: hidden;
   filter: blur(var(--gallery-depth-blur, 0));
   opacity: 0;
@@ -5497,7 +5458,7 @@ dialog:focus-visible {
 }
 
 :root[data-theme="light"] .showcase-gallery-card {
-  background: rgb(247 247 248 / 96%);
+  background: rgb(217 217 219 / 96%);
   box-shadow:
     0 0 0 1px rgb(0 0 0 / 8%),
     0 14px 38px rgb(0 0 0 / 9%);
@@ -5528,19 +5489,25 @@ dialog:focus-visible {
 
 .showcase-gallery-card__surface.demo-surface {
   position: absolute;
-  inset: 0;
+  inset: 8px;
   display: flex;
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
   min-height: 0;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   padding: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  border-radius: 14px !important;
+  background: rgb(18 18 20);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 10%);
+  filter: grayscale(1);
   pointer-events: none;
+}
+
+:root[data-theme="light"] .showcase-gallery-card__surface.demo-surface {
+  background: rgb(248 248 249);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 10%);
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback)
@@ -5594,12 +5561,6 @@ dialog:focus-visible {
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
-}
-
-.demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-mode
-  > .recording-toolbar
-  > .recording-pattern-switch {
-  display: none;
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback).is-gallery-selecting
@@ -20236,15 +20197,24 @@ html.is-navigation-pending .demo-surface:is(:fullscreen, .is-recording-fallback)
   .showcase-gallery-card
   > .showcase-gallery-card__surface.demo-surface {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: 8px;
+  width: auto;
+  height: auto;
   min-height: 0 !important;
   padding: 0;
   border: 0;
-  border-radius: inherit;
-  background: transparent !important;
-  box-shadow: none !important;
+  border-radius: 14px !important;
+  background: rgb(18 18 20) !important;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 10%) !important;
+  filter: grayscale(1);
+}
+
+:root[data-theme="light"]
+  .demo-surface:is(:fullscreen, .is-recording-fallback)
+  .showcase-gallery-card
+  > .showcase-gallery-card__surface.demo-surface {
+  background: rgb(248 248 249) !important;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 10%) !important;
 }
 
 .demo-surface:is(:fullscreen, .is-recording-fallback)
