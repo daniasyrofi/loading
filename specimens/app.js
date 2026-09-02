@@ -15346,7 +15346,6 @@ function installShowcaseChrome({ root, item, catalog }) {
       event.preventDefault();
       galleryCards[(index + offset + galleryCards.length) % galleryCards.length]?.button.focus();
     });
-    cardContent.append(record.panel);
     cardSurface.append(cardContent);
     card.append(cardSurface, cardButton);
     galleryWorld.append(card);
