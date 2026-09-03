@@ -1,4 +1,6 @@
 import * as THREE from "./vendor/three.module.min.js";
+import { createShowcaseScene } from "./showcase-scene.js";
+import { createTimerRuntime } from "./timer-runtime.js";
 
 const VARIANTS = Object.freeze({
   drive: {
@@ -1125,6 +1127,11 @@ function formatElapsed(milliseconds) {
   return `${minutes}m ${seconds}s`;
 }
 
+const timerRuntime = createTimerRuntime({
+  document, IntersectionObserver: window.IntersectionObserver,
+  setInterval: window.setInterval.bind(window), clearInterval: window.clearInterval.bind(window)
+});
+
 function ElapsedTimer({ initialElapsed = 0, paused = false } = {}) {
   const root = createElement("span", "elapsed-timer");
   root.setAttribute("aria-label", "Elapsed time");
@@ -1132,10 +1139,11 @@ function ElapsedTimer({ initialElapsed = 0, paused = false } = {}) {
   let elapsedBeforeStart = Math.max(0, initialElapsed * 1000);
   let startedAt = performance.now();
   let isPaused = Boolean(paused);
-  let intervalId = 0;
+  let isVisible = false;
+  let unsubscribe = null;
 
   const elapsedNow = () => (
-    isPaused ? elapsedBeforeStart : elapsedBeforeStart + performance.now() - startedAt
+    isPaused || !isVisible ? elapsedBeforeStart : elapsedBeforeStart + performance.now() - startedAt
   );
 
   const render = () => {
@@ -1143,15 +1151,14 @@ function ElapsedTimer({ initialElapsed = 0, paused = false } = {}) {
   };
 
   const startInterval = () => {
-    if (intervalId || isPaused) return;
+    if (unsubscribe || isPaused || !isVisible) return;
     startedAt = performance.now();
-    intervalId = window.setInterval(render, 100);
+    unsubscribe = timerRuntime.subscribe(render);
   };
 
   const stopInterval = () => {
-    if (!intervalId) return;
-    window.clearInterval(intervalId);
-    intervalId = 0;
+    unsubscribe?.();
+    unsubscribe = null;
   };
 
   function setPaused(nextPaused) {
@@ -1170,14 +1177,33 @@ function ElapsedTimer({ initialElapsed = 0, paused = false } = {}) {
     render();
   }
 
+  const unobserve = timerRuntime.observe(root, (nextVisible) => {
+    if (nextVisible === isVisible) return;
+    if (!nextVisible) {
+      elapsedBeforeStart = elapsedNow();
+      isVisible = false;
+      stopInterval();
+    } else {
+      isVisible = true;
+      startedAt = performance.now();
+      startInterval();
+    }
+    render();
+  });
+
   function reset(nextElapsed = 0) {
     elapsedBeforeStart = Math.max(0, Number(nextElapsed) || 0) * 1000;
     startedAt = performance.now();
     render();
   }
 
+  const handleResetRequest = () => reset(0);
+  root.addEventListener("elapsed-timer:reset", handleResetRequest);
+
   function destroy() {
     stopInterval();
+    unobserve();
+    root.removeEventListener("elapsed-timer:reset", handleResetRequest);
   }
 
   render();
@@ -5683,7 +5709,19 @@ function CompactLoadingFamily({ state = "braiding", paused = false } = {}) {
     const centerX = 14;
     const centerY = 14;
     const darkTheme = document.documentElement.dataset.theme === "dark";
-    const crystalColour = {
+    const recordingSurface = root.closest(".demo-surface");
+    const neutralShowcase = recordingSurface?.matches(":fullscreen, .is-recording-fallback");
+    const neutralChannels = darkTheme ? "242,243,244" : "38,42,48";
+    const crystalColour = neutralShowcase ? {
+      base: `rgba(${neutralChannels},.72)`,
+      primary: `rgba(${neutralChannels},.98)`,
+      branchStrong: `rgba(${neutralChannels},.84)`,
+      branchSoft: `rgba(${neutralChannels},.56)`,
+      fragment: `rgba(${neutralChannels},.88)`,
+      glint: `rgba(${neutralChannels},.94)`,
+      coreLine: `rgba(${neutralChannels},.7)`,
+      core: `rgba(${neutralChannels},1)`
+    } : {
       base: darkTheme ? "rgba(218,232,239,.78)" : "rgba(57,86,104,.8)",
       primary: darkTheme ? "rgba(231,244,250,.96)" : "rgba(38,78,102,.96)",
       branchStrong: darkTheme ? "rgba(207,233,246,.82)" : "rgba(58,105,131,.82)",
@@ -14081,61 +14119,73 @@ function createRecordingBackdropRenderer(surface) {
   const mesh = new THREE.Mesh(geometry, material);
   scene.add(mesh);
 
-  const fieldUniforms = {
-    uTime: uniforms.uTime,
-    uDark: uniforms.uDark,
-    uAspect: uniforms.uAspect,
-    uField: { value: 0 },
-    uCount: { value: RECORDING_FIELD_POINT_COUNT },
-    uSize: { value: 2.2 }
-  };
-  const fieldGeometry = new THREE.BufferGeometry();
-  const fieldIndices = new Float32Array(RECORDING_FIELD_POINT_COUNT);
-  for (let index = 0; index < RECORDING_FIELD_POINT_COUNT; index += 1) fieldIndices[index] = index;
-  fieldGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(RECORDING_FIELD_POINT_COUNT * 3), 3));
-  fieldGeometry.setAttribute("aIndex", new THREE.BufferAttribute(fieldIndices, 1));
-  const fieldMaterial = new THREE.ShaderMaterial({
-    uniforms: fieldUniforms,
-    vertexShader: RECORDING_FIELD_VERTEX_SHADER,
-    fragmentShader: RECORDING_FIELD_FRAGMENT_SHADER,
-    transparent: true,
-    depthTest: false,
-    depthWrite: false,
-    blending: uniforms.uDark.value ? THREE.AdditiveBlending : THREE.NormalBlending
-  });
-  const fieldScene = new THREE.Scene();
-  const fieldPoints = new THREE.Points(fieldGeometry, fieldMaterial);
-  fieldPoints.frustumCulled = false;
-  fieldScene.add(fieldPoints);
+  let field = null;
   let fieldActive = false;
+  const buildField = () => {
+    if (field) return field;
+    const fieldUniforms = {
+      uTime: uniforms.uTime,
+      uDark: uniforms.uDark,
+      uAspect: uniforms.uAspect,
+      uField: { value: 0 },
+      uCount: { value: RECORDING_FIELD_POINT_COUNT },
+      uSize: { value: 2.2 }
+    };
+    const fieldGeometry = new THREE.BufferGeometry();
+    const fieldIndices = new Float32Array(RECORDING_FIELD_POINT_COUNT);
+    for (let index = 0; index < RECORDING_FIELD_POINT_COUNT; index += 1) fieldIndices[index] = index;
+    fieldGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(RECORDING_FIELD_POINT_COUNT * 3), 3));
+    fieldGeometry.setAttribute("aIndex", new THREE.BufferAttribute(fieldIndices, 1));
+    const fieldMaterial = new THREE.ShaderMaterial({
+      uniforms: fieldUniforms,
+      vertexShader: RECORDING_FIELD_VERTEX_SHADER,
+      fragmentShader: RECORDING_FIELD_FRAGMENT_SHADER,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      blending: uniforms.uDark.value ? THREE.AdditiveBlending : THREE.NormalBlending
+    });
+    const fieldScene = new THREE.Scene();
+    const fieldPoints = new THREE.Points(fieldGeometry, fieldMaterial);
+    fieldPoints.frustumCulled = false;
+    fieldScene.add(fieldPoints);
+    field = { uniforms: fieldUniforms, geometry: fieldGeometry, material: fieldMaterial, scene: fieldScene };
+    return field;
+  };
 
-  const streamUniforms = { uTime: uniforms.uTime, uAspect: uniforms.uAspect, uDark: uniforms.uDark };
-  const streamGeometry = new THREE.BufferGeometry();
-  const streamSeeds = new Float32Array(RECORDING_STREAM_SEGMENTS * 2);
-  const streamEnds = new Float32Array(RECORDING_STREAM_SEGMENTS * 2);
-  for (let segment = 0; segment < RECORDING_STREAM_SEGMENTS; segment += 1) {
-    streamSeeds[segment * 2] = segment + 1;
-    streamSeeds[segment * 2 + 1] = segment + 1;
-    streamEnds[segment * 2] = 0;
-    streamEnds[segment * 2 + 1] = 1;
-  }
-  streamGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(RECORDING_STREAM_SEGMENTS * 6), 3));
-  streamGeometry.setAttribute("aSeed", new THREE.BufferAttribute(streamSeeds, 1));
-  streamGeometry.setAttribute("aEnd", new THREE.BufferAttribute(streamEnds, 1));
-  const streamMaterial = new THREE.ShaderMaterial({
-    uniforms: streamUniforms,
-    vertexShader: RECORDING_STREAM_VERTEX_SHADER,
-    fragmentShader: RECORDING_STREAM_FRAGMENT_SHADER,
-    transparent: true,
-    depthTest: false,
-    depthWrite: false,
-    blending: uniforms.uDark.value ? THREE.AdditiveBlending : THREE.NormalBlending
-  });
-  const streamScene = new THREE.Scene();
-  const streamLines = new THREE.LineSegments(streamGeometry, streamMaterial);
-  streamLines.frustumCulled = false;
-  streamScene.add(streamLines);
+  let stream = null;
   let streamActive = false;
+  const buildStream = () => {
+    if (stream) return stream;
+    const streamUniforms = { uTime: uniforms.uTime, uAspect: uniforms.uAspect, uDark: uniforms.uDark };
+    const streamGeometry = new THREE.BufferGeometry();
+    const streamSeeds = new Float32Array(RECORDING_STREAM_SEGMENTS * 2);
+    const streamEnds = new Float32Array(RECORDING_STREAM_SEGMENTS * 2);
+    for (let segment = 0; segment < RECORDING_STREAM_SEGMENTS; segment += 1) {
+      streamSeeds[segment * 2] = segment + 1;
+      streamSeeds[segment * 2 + 1] = segment + 1;
+      streamEnds[segment * 2] = 0;
+      streamEnds[segment * 2 + 1] = 1;
+    }
+    streamGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(RECORDING_STREAM_SEGMENTS * 6), 3));
+    streamGeometry.setAttribute("aSeed", new THREE.BufferAttribute(streamSeeds, 1));
+    streamGeometry.setAttribute("aEnd", new THREE.BufferAttribute(streamEnds, 1));
+    const streamMaterial = new THREE.ShaderMaterial({
+      uniforms: streamUniforms,
+      vertexShader: RECORDING_STREAM_VERTEX_SHADER,
+      fragmentShader: RECORDING_STREAM_FRAGMENT_SHADER,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      blending: uniforms.uDark.value ? THREE.AdditiveBlending : THREE.NormalBlending
+    });
+    const streamScene = new THREE.Scene();
+    const streamLines = new THREE.LineSegments(streamGeometry, streamMaterial);
+    streamLines.frustumCulled = false;
+    streamScene.add(streamLines);
+    stream = { geometry: streamGeometry, material: streamMaterial, scene: streamScene };
+    return stream;
+  };
 
   let diffusion = null;
   let diffusionActive = false;
@@ -14220,6 +14270,7 @@ function createRecordingBackdropRenderer(surface) {
 
   let frameId = 0;
   let running = false;
+  let suspended = false;
   let destroyed = false;
   let lastFrame = 0;
   let artTime = 4.0;
@@ -14236,7 +14287,7 @@ function createRecordingBackdropRenderer(surface) {
     const targetHeight = Math.round(height * renderer.getPixelRatio());
     if (canvas.width !== targetWidth || canvas.height !== targetHeight) renderer.setSize(width, height, false);
     uniforms.uAspect.value = width / height;
-    fieldUniforms.uSize.value = Math.max(1.8, height / 260) * renderer.getPixelRatio();
+    if (field) field.uniforms.uSize.value = Math.max(1.8, height / 260) * renderer.getPixelRatio();
   };
 
   const renderFrame = (timestamp = performance.now()) => {
@@ -14254,10 +14305,14 @@ function createRecordingBackdropRenderer(surface) {
     if (nextTheme !== currentTheme) {
       currentTheme = nextTheme;
       uniforms.uDark.value = nextTheme;
-      fieldMaterial.blending = nextTheme ? THREE.AdditiveBlending : THREE.NormalBlending;
-      fieldMaterial.needsUpdate = true;
-      streamMaterial.blending = nextTheme ? THREE.AdditiveBlending : THREE.NormalBlending;
-      streamMaterial.needsUpdate = true;
+      if (field) {
+        field.material.blending = nextTheme ? THREE.AdditiveBlending : THREE.NormalBlending;
+        field.material.needsUpdate = true;
+      }
+      if (stream) {
+        stream.material.blending = nextTheme ? THREE.AdditiveBlending : THREE.NormalBlending;
+        stream.material.needsUpdate = true;
+      }
     }
     const speed = parseFloat(surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED) || 1;
     const elapsed = lastTimestamp ? Math.min(0.12, (timestamp - lastTimestamp) * 0.001) : 0;
@@ -14271,13 +14326,13 @@ function createRecordingBackdropRenderer(surface) {
     renderer.render(scene, camera);
     if (streamActive) {
       renderer.autoClear = false;
-      renderer.render(streamScene, camera);
+      renderer.render(stream.scene, camera);
       renderer.autoClear = true;
       return;
     }
     if (!fieldActive) return;
     renderer.autoClear = false;
-    renderer.render(fieldScene, camera);
+    renderer.render(field.scene, camera);
     renderer.autoClear = true;
   };
 
@@ -14291,7 +14346,7 @@ function createRecordingBackdropRenderer(surface) {
   };
 
   const start = () => {
-    if (destroyed || running || document.hidden) return;
+    if (destroyed || suspended || running || document.hidden) return;
     running = true;
     renderFrame();
     if (!reducedMotion()) frameId = window.requestAnimationFrame(tick);
@@ -14341,7 +14396,8 @@ function createRecordingBackdropRenderer(surface) {
         return;
       }
       if (fieldActive) {
-        fieldUniforms.uField.value = field;
+        const fieldRenderer = buildField();
+        fieldRenderer.uniforms.uField.value = field;
         /* milky way, stars and aurora each get their own continuous sky drawn
            underneath; everything else sits on the plain void */
         /* each scene has a continuous layer drawn underneath it; points alone
@@ -14352,11 +14408,21 @@ function createRecordingBackdropRenderer(surface) {
       } else {
         uniforms.uMode.value = streamActive ? 4 : mode;
       }
+      if (streamActive) buildStream();
       start();
       renderFrame();
     },
     refreshTheme() {
       if (canvas.classList.contains("is-active")) renderFrame();
+    },
+    setSuspended(nextSuspended) {
+      suspended = Boolean(nextSuspended);
+      if (suspended) {
+        renderFrame();
+        stop();
+      } else if (canvas.classList.contains("is-active") || asciiPattern) {
+        start();
+      }
     },
     destroy() {
       destroyed = true;
@@ -14366,10 +14432,10 @@ function createRecordingBackdropRenderer(surface) {
       document.removeEventListener("visibilitychange", handleVisibility);
       geometry.dispose();
       material.dispose();
-      fieldGeometry.dispose();
-      fieldMaterial.dispose();
-      streamGeometry.dispose();
-      streamMaterial.dispose();
+      field?.geometry.dispose();
+      field?.material.dispose();
+      stream?.geometry.dispose();
+      stream?.material.dispose();
       if (diffusion) {
         diffusion.targets.forEach((target) => target.dispose());
         diffusion.stepMaterial.dispose();
@@ -14398,6 +14464,7 @@ let activeRecordingSurface = null;
 let recordingThemeBefore = null;
 let recordingChromeTimer = 0;
 let recordingDetachedControls = [];
+let restoreShowcaseContent = null;
 
 function setExperimentTheme(theme) {
   const normalized = theme === "dark" ? "dark" : "light";
@@ -14409,6 +14476,7 @@ function setExperimentTheme(theme) {
   activeRecordingSurface?.querySelectorAll("[data-recording-theme]").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.recordingTheme === normalized));
   });
+  activeRecordingSurface?.querySelector('[data-recording-dropdown="theme"]')?.setRecordingValue(normalized);
   activeRecordingBackdropRenderer?.refreshTheme();
 }
 
@@ -14424,6 +14492,7 @@ function leaveRecordingMode({ restoreTheme = true } = {}) {
   const surface = activeRecordingSurface;
   if (!surface) return;
   window.clearTimeout(recordingChromeTimer);
+  restoreShowcaseContent?.({ updateHistory: true });
   recordingDetachedControls.forEach(({ node, parent, nextSibling }) => {
     if (nextSibling?.parentNode === parent) parent.insertBefore(node, nextSibling);
     else parent.append(node);
@@ -14431,8 +14500,15 @@ function leaveRecordingMode({ restoreTheme = true } = {}) {
   recordingDetachedControls = [];
   activeRecordingBackdropRenderer?.destroy();
   activeRecordingBackdropRenderer = null;
-  surface.classList.remove("is-recording-mode", "is-recording-fallback", "is-recording-idle");
+  surface.classList.remove(
+    "is-recording-mode",
+    "is-recording-fallback",
+    "is-recording-idle",
+    "is-recording-entering",
+    "is-recording-exiting"
+  );
   document.body.classList.remove("has-recording-fallback");
+  document.documentElement.dataset.immersive = "false";
   activeRecordingSurface = null;
   if (restoreTheme && recordingThemeBefore) setExperimentTheme(recordingThemeBefore);
   recordingThemeBefore = null;
@@ -14441,8 +14517,9 @@ function leaveRecordingMode({ restoreTheme = true } = {}) {
 async function enterRecordingMode(surface) {
   if (activeRecordingSurface && activeRecordingSurface !== surface) leaveRecordingMode();
   activeRecordingSurface = surface;
-  surface.dataset.recordingPattern ||= "dither";
-  surface.dataset.recordingSpeed ||= RECORDING_DEFAULT_SPEED;
+  document.documentElement.dataset.immersive = "true";
+  surface.dataset.recordingPattern = requestedRecordingPattern || surface.dataset.recordingPattern || "dither";
+  surface.dataset.recordingSpeed = requestedRecordingSpeed || surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED;
   recordingDetachedControls = Array.from(
     surface.querySelectorAll(
       ".recording-subject .playback-control, .recording-subject .replay-control, .recording-subject .signal-pause, .recording-subject .phase-pause"
@@ -14454,19 +14531,30 @@ async function enterRecordingMode(surface) {
   }));
   recordingDetachedControls.forEach(({ node }) => surface.append(node));
   recordingThemeBefore = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-  surface.classList.add("is-recording-mode");
+  surface.classList.add("is-recording-mode", "is-recording-entering");
   surface.querySelectorAll("[data-recording-theme]").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.recordingTheme === recordingThemeBefore));
   });
+  surface.querySelector('[data-recording-dropdown="theme"]')?.setRecordingValue(recordingThemeBefore);
   wakeRecordingChrome(surface);
-  try {
+  syncRecordingBackdropRenderer(surface);
+  if (requestedEmbedded) {
+    surface.classList.add("is-recording-fallback");
+    document.body.classList.add("has-recording-fallback");
+  } else try {
     if (surface.requestFullscreen) await surface.requestFullscreen({ navigationUI: "hide" });
     else throw new Error("Fullscreen API unavailable");
   } catch {
     surface.classList.add("is-recording-fallback");
     document.body.classList.add("has-recording-fallback");
   }
-  syncRecordingBackdropRenderer(surface);
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  if (activeRecordingSurface !== surface) return;
+  surface.showcaseScene?.activate();
+  // Artwork animates on its own clock; mode/camera transitions never move it.
+  if (surface.showcaseScene) activeRecordingBackdropRenderer?.setSuspended(false);
+  surface.classList.remove("is-recording-entering");
+  if (requestedEmbedded) window.parent.postMessage({ type: "experiment:immersive-ready" }, "*");
 }
 
 function createRecordingBackdrop() {
@@ -14666,12 +14754,126 @@ const RECORDING_PATTERN_ARCHIVE = [
 const RECORDING_PATTERN_GROUPS = [["Fullscreen background", [
   ["dither", "Dither"],
   ["corona", "Corona"],
-  ["reasoning-circuit", "Reasoning Circuit"],
   ["echo-halo", "Echo Halo"],
   ["pixel-tide", "Pixel Tide"],
-  ["signal-bloom", "Signal Bloom"],
-  ["sunflowers", "Sunflower"]
+  ["signal-bloom", "Signal Bloom"]
 ]]];
+
+let recordingDropdownId = 0;
+
+function createRecordingDropdown({ label, groups, value, onChange, className = "" }) {
+  const root = createElement("div", `recording-pattern-switch recording-select ${className}`.trim());
+  const trigger = createElement("button", "recording-select-trigger");
+  const menu = createElement("div", "recording-select-menu");
+  const menuId = `recording-select-${++recordingDropdownId}`;
+  const options = [];
+
+  trigger.type = "button";
+  trigger.setAttribute("aria-label", label);
+  trigger.setAttribute("aria-haspopup", "listbox");
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.setAttribute("aria-controls", menuId);
+  trigger.innerHTML = `<span class="recording-select-trigger__value"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m6 9.5 6 6 6-6"></path>
+    </svg>`;
+
+  menu.id = menuId;
+  menu.setAttribute("role", "listbox");
+  menu.setAttribute("aria-label", label);
+  menu.hidden = true;
+
+  groups.forEach(([groupLabel, groupOptions]) => {
+    if (groups.length > 1) {
+      const heading = createElement("div", "recording-select-group-label", groupLabel);
+      menu.append(heading);
+    }
+    groupOptions.forEach(([optionValue, optionLabel]) => {
+      const option = createElement("button", "recording-select-option");
+      option.type = "button";
+      option.setAttribute("role", "option");
+      option.dataset.value = optionValue;
+      option.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m5 12 4 4L19 6"></path>
+        </svg><span>${optionLabel}</span>`;
+      options.push(option);
+      menu.append(option);
+    });
+  });
+
+  const onOutsidePointer = (event) => {
+    if (!root.contains(event.target)) close();
+  };
+  const close = ({ restoreFocus = false } = {}) => {
+    root.classList.remove("is-open");
+    trigger.setAttribute("aria-expanded", "false");
+    menu.hidden = true;
+    document.removeEventListener("pointerdown", onOutsidePointer);
+    if (restoreFocus) trigger.focus();
+  };
+  const open = () => {
+    document.querySelectorAll(".recording-select.is-open").forEach((select) => {
+      if (select !== root) select.querySelector(".recording-select-trigger")?.click();
+    });
+    root.classList.add("is-open");
+    trigger.setAttribute("aria-expanded", "true");
+    menu.hidden = false;
+    document.addEventListener("pointerdown", onOutsidePointer);
+  };
+  const setValue = (nextValue, { emit = false } = {}) => {
+    const selected = options.find((option) => option.dataset.value === nextValue) || options[0];
+    if (!selected) return;
+    root.dataset.value = selected.dataset.value;
+    trigger.querySelector(".recording-select-trigger__value").textContent = selected.textContent.trim();
+    options.forEach((option) => option.setAttribute("aria-selected", String(option === selected)));
+    if (emit) onChange?.(selected.dataset.value);
+  };
+
+  trigger.addEventListener("click", () => {
+    if (root.classList.contains("is-open")) close();
+    else open();
+  });
+  trigger.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+    event.preventDefault();
+    open();
+    const selectedIndex = Math.max(0, options.findIndex((option) => option.getAttribute("aria-selected") === "true"));
+    const offset = event.key === "ArrowDown" ? 1 : -1;
+    options[(selectedIndex + offset + options.length) % options.length]?.focus();
+  });
+  options.forEach((option, index) => {
+    option.addEventListener("click", () => {
+      setValue(option.dataset.value, { emit: true });
+      close({ restoreFocus: true });
+    });
+    option.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close({ restoreFocus: true });
+      } else if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+        event.preventDefault();
+        const nextIndex = event.key === "Home" ? 0
+          : event.key === "End" ? options.length - 1
+            : (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+        options[nextIndex]?.focus();
+      }
+    });
+  });
+  root.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !root.classList.contains("is-open")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    close({ restoreFocus: true });
+  }, true);
+  root.addEventListener("focusout", (event) => {
+    if (!root.contains(event.relatedTarget)) close();
+  });
+
+  root.setRecordingValue = setValue;
+  root.append(trigger, menu);
+  setValue(value);
+  return root;
+}
 
 function createRecordingToolbar({ surface, title }) {
   const toolbar = createElement("div", "recording-toolbar");
@@ -14692,13 +14894,20 @@ function createRecordingToolbar({ surface, title }) {
     });
     themeGroup.append(button);
   });
+  const themeDropdown = createRecordingDropdown({
+    label: "Recording color theme",
+    groups: [["Theme", [["light", "Light"], ["dark", "Dark"]]]],
+    value: document.documentElement.dataset.theme === "dark" ? "dark" : "light",
+    className: "recording-theme-select",
+    onChange: (theme) => {
+      setExperimentTheme(theme);
+      wakeRecordingChrome(surface);
+    }
+  });
+  themeDropdown.dataset.recordingDropdown = "theme";
 
-  const patternGroup = createElement("div", "recording-pattern-switch");
-  const patternSelect = createElement("select", "recording-pattern-select");
-  patternSelect.setAttribute("aria-label", "Recording background theme");
   const isDraftWorkbench = new URLSearchParams(window.location.search).get("gallery") === "draft"
-    || window.location.pathname.includes("/draft")
-    || new Set(["localhost", "127.0.0.1", "::1"]).has(window.location.hostname);
+    || window.location.pathname.includes("/draft");
   const activePatternGroups = isDraftWorkbench ? RECORDING_PATTERN_ARCHIVE : RECORDING_PATTERN_GROUPS;
   const patternGroups = surface.dataset.recordingPattern === "frost"
     ? activePatternGroups.map(([groupLabel, options]) => [
@@ -14706,52 +14915,31 @@ function createRecordingToolbar({ surface, title }) {
         [...options, ["frost", "Frost"]]
       ])
     : activePatternGroups;
-  patternGroups.forEach(([groupLabel, options]) => {
-    const optionGroup = document.createElement("optgroup");
-    optionGroup.label = groupLabel;
-    options.forEach(([pattern, label]) => {
-      const option = document.createElement("option");
-      option.value = pattern;
-      option.textContent = label;
-      optionGroup.append(option);
-    });
-    patternSelect.append(optionGroup);
+  const patternGroup = createRecordingDropdown({
+    label: "Recording background theme",
+    groups: patternGroups,
+    value: surface.dataset.recordingPattern || "dither",
+    onChange: (pattern) => {
+      surface.dataset.recordingPattern = pattern;
+      syncRecordingBackdropRenderer(surface);
+      wakeRecordingChrome(surface);
+    }
   });
-  patternSelect.value = surface.dataset.recordingPattern || "dither";
-  patternSelect.addEventListener("change", () => {
-    surface.dataset.recordingPattern = patternSelect.value;
-    syncRecordingBackdropRenderer(surface);
-    wakeRecordingChrome(surface);
-  });
-  const speedGroup = createElement("div", "recording-pattern-switch");
-  const speedSelect = createElement("select", "recording-pattern-select recording-speed-select");
-  speedSelect.setAttribute("aria-label", "Backdrop motion speed");
-  RECORDING_SPEEDS.forEach(([value, label]) => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = label;
-    speedSelect.append(option);
-  });
-  speedSelect.value = surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED;
-  speedSelect.addEventListener("change", () => {
-    surface.dataset.recordingSpeed = speedSelect.value;
-    wakeRecordingChrome(surface);
-  });
-  const speedChevron = createElement("span", "recording-pattern-chevron");
-  speedChevron.setAttribute("aria-hidden", "true");
-  speedChevron.innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m6 9.5 6 6 6-6"></path>
-    </svg>`;
-  speedGroup.append(speedSelect, speedChevron);
+  patternGroup.dataset.recordingDropdown = "pattern";
 
-  const patternChevron = createElement("span", "recording-pattern-chevron");
-  patternChevron.setAttribute("aria-hidden", "true");
-  patternChevron.innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m6 9.5 6 6 6-6"></path>
-    </svg>`;
-  patternGroup.append(patternSelect, patternChevron);
+  const speedGroup = isDraftWorkbench
+    ? createRecordingDropdown({
+        label: "Backdrop motion speed",
+        groups: [["Backdrop speed", RECORDING_SPEEDS]],
+        value: surface.dataset.recordingSpeed || RECORDING_DEFAULT_SPEED,
+        className: "recording-speed-select",
+        onChange: (speed) => {
+          surface.dataset.recordingSpeed = speed;
+          wakeRecordingChrome(surface);
+        }
+      })
+    : null;
+  if (speedGroup) speedGroup.dataset.recordingDropdown = "speed";
 
   const exitButton = createElement("button", "recording-exit");
   exitButton.type = "button";
@@ -14761,11 +14949,17 @@ function createRecordingToolbar({ surface, title }) {
       <path d="M6 6l12 12M18 6 6 18"></path>
     </svg>`;
   exitButton.addEventListener("click", async () => {
-    if (document.fullscreenElement) await document.exitFullscreen();
+    surface.classList.add("is-recording-exiting");
+    if (document.documentElement.dataset.motion !== "reduce") {
+      await new Promise((resolve) => window.setTimeout(resolve, 110));
+    }
+    if (requestedEmbedded) {
+      window.parent.postMessage({ type: "experiment:exit-fullscreen" }, "*");
+    } else if (document.fullscreenElement) await document.exitFullscreen();
     else leaveRecordingMode();
   });
 
-  toolbar.append(patternGroup, speedGroup, themeGroup, exitButton);
+  toolbar.append(patternGroup, ...(speedGroup ? [speedGroup] : []), themeGroup, themeDropdown, exitButton);
   surface.addEventListener("pointermove", () => wakeRecordingChrome(surface), { passive: true });
   surface.addEventListener("pointerdown", () => wakeRecordingChrome(surface), { passive: true });
   return toolbar;
@@ -14852,6 +15046,179 @@ function createSpecimenActions({ title, source, onFullscreen }) {
   return root;
 }
 
+function createShowcaseControl(className, label, icon) {
+  const button = createElement("button", `showcase-control ${className}`.trim());
+  button.type = "button";
+  button.setAttribute("aria-label", label);
+  button.innerHTML = icon;
+  return button;
+}
+
+function installShowcaseChrome({ root, item, catalog }) {
+  const surface = root.querySelector(".demo-surface");
+  if (!surface || !item) return;
+  const ordered = catalog.experiments.filter((entry) => PUBLIC_SHOWCASE_SPECIMEN_IDS.has(entry.id));
+  let currentIndex = ordered.findIndex((entry) => entry.id === item.id);
+  if (currentIndex < 0 || ordered.length < 2) return;
+  root.classList.add("is-showcase-detail");
+
+  const sourceActions = surface.querySelector(":scope > .specimen-actions");
+  let fullscreenButton = sourceActions?.querySelector(".specimen-action--fullscreen");
+  if (!fullscreenButton) {
+    fullscreenButton = createShowcaseControl(
+      "specimen-action specimen-action--fullscreen",
+      `Open ${item.title} in fullscreen`,
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>'
+    );
+    fullscreenButton.addEventListener("click", () => enterRecordingMode(surface));
+  }
+  sourceActions?.remove();
+
+  const timing = createElement("div", "showcase-timing");
+  const modeSwitch = createElement("div", "showcase-mode-switch");
+  modeSwitch.setAttribute("role", "group");
+  modeSwitch.setAttribute("aria-label", "Fullscreen view mode");
+  const singleButton = createElement("button", "showcase-mode-button", "Single");
+  const galleryButton = createElement("button", "showcase-mode-button", "Gallery");
+  singleButton.type = galleryButton.type = "button";
+  modeSwitch.append(singleButton, galleryButton);
+  const resetButton = createShowcaseControl(
+    "showcase-reset", "Reset timer",
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"></path><path d="M20 4v7h-7"></path></svg>'
+  );
+  timing.append(modeSwitch, resetButton);
+  const primaryActions = createElement("div", "showcase-primary-actions");
+  primaryActions.setAttribute("aria-label", "Fullscreen control");
+  primaryActions.append(fullscreenButton);
+
+  const navigation = createElement("nav", "showcase-navigation");
+  navigation.setAttribute("aria-label", "Browse loading experiments");
+  const makeLink = (direction, path) => {
+    const link = createElement("a", `showcase-navigation__link showcase-navigation__link--${direction}`);
+    link.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${path}"></path></svg>`;
+    return link;
+  };
+  const previousLink = makeLink("previous", "m15 18-6-6 6-6");
+  const nextLink = makeLink("next", "m9 18 6-6-6-6");
+  navigation.append(previousLink, nextLink);
+
+  // HUD and backdrop are siblings of the clipping viewport, never camera children.
+  const hud = createElement("div", "showcase-hud");
+  hud.append(timing, primaryActions, navigation);
+  const toolbar = surface.querySelector(":scope > .recording-toolbar");
+  if (toolbar) hud.append(toolbar);
+  surface.querySelectorAll(":scope > :is([data-media-player], .showcase-media-player)")
+    .forEach((player) => hud.append(player));
+  surface.append(hud);
+
+  const builtinFactories = {
+    "02": SignalRelay, "05": OrbitStatus, "06": SweepTrack, "18": BeaconStack,
+    "20": MatrixTrace, "23": BandScan, "26": CellMerge, "29": CodeRegister,
+    "34": LiftQueue, "47": BrainstormLoop, "49": StepTrace, "51": HourglassFlip,
+    "56": NewtonCradle, "60": BalanceBeam
+  };
+  const definitionsById = new Map(extendedShapeDefinitions.map((definition) => [definition.index, definition]));
+  const records = ordered.map((entry) => {
+    const entryRoot = rootById.get(entry.id);
+    const entrySurface = entryRoot?.querySelector(":scope > .demo-surface");
+    const card = entrySurface?.querySelector(":scope > .recording-subject");
+    if (!card) return null;
+    card.querySelectorAll(".playback-control, .replay-control, .progress-reset, .signal-pause, .phase-pause")
+      .forEach((control) => control.remove());
+    const definition = definitionsById.get(entry.id);
+    const factory = builtinFactories[entry.id] || definition?.factory;
+    const variants = [...(entrySurface.querySelectorAll(":scope > .variant-selector [data-variant]") || [])]
+      .map((button) => button.dataset.variant);
+    return {
+      entry, card,
+      variantCount: variants.length,
+      createInstance({ variantIndex, elapsed }) {
+        const variant = variants[variantIndex] || definition?.initialVariant;
+        const component = entry.id === "148"
+          ? CompactLoadingFamily({ state: "crystallizing", paused: true })
+          : factory({ ...(definition ? { label: definition.label } : {}),
+            ...(variant ? { variant } : {}), initialElapsed: elapsed, paused: true });
+        const subject = createElement("div", "recording-subject");
+        const panel = createElement("div", "recording-content-panel");
+        panel.append(component.root);
+        subject.append(panel);
+        subject.querySelectorAll(".playback-control, .replay-control, .progress-reset, .signal-pause, .phase-pause")
+          .forEach((control) => control.remove());
+        return {
+          card: subject, setPaused: component.setPaused, destroy: component.destroy,
+          createVariantSelector: variants.length > 1 ? () => VariantSelector({
+            variants, selected: variant, ariaLabel: `${entry.title} variant`, onChange: component.setVariant
+          }).root : null
+        };
+      },
+      contextClassName: Array.from(entryRoot.classList)
+        .filter((name) => !["specimen-section", "is-showcase-detail"].includes(name)).join(" "),
+      variantSelector: entrySurface.querySelector(":scope > .variant-selector")
+    };
+  }).filter(Boolean);
+
+  const detailUrl = (entry) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("specimen", entry.id);
+    url.searchParams.set("display", String(entry.order).padStart(2, "0"));
+    url.searchParams.set("theme", document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+    if (surface.dataset.recordingPattern) url.searchParams.set("pattern", surface.dataset.recordingPattern);
+    if (requestedGallery === "draft" && surface.dataset.recordingSpeed) {
+      url.searchParams.set("speed", surface.dataset.recordingSpeed);
+    } else url.searchParams.delete("speed");
+    if (requestedEmbedded) {
+      url.searchParams.set("embedded", "true");
+      url.searchParams.set("immersive", "true");
+    }
+    url.searchParams.delete("reset");
+    return url;
+  };
+  const updateNavigation = () => {
+    const previous = ordered[(currentIndex - 1 + ordered.length) % ordered.length];
+    const next = ordered[(currentIndex + 1) % ordered.length];
+    [[previousLink, previous, "Previous"], [nextLink, next, "Next"]].forEach(([link, entry, label]) => {
+      link.href = detailUrl(entry).href;
+      link.dataset.label = entry.title;
+      link.setAttribute("aria-label", `${label}: ${entry.title}`);
+    });
+  };
+  const updateSelection = (id) => {
+    currentIndex = ordered.findIndex((entry) => entry.id === id);
+    const entry = ordered[currentIndex];
+    if (!entry) return;
+    // Metadata changes never replace root classes or alter the mounted card field.
+    root.querySelector(".specimen-index").textContent = String(entry.order).padStart(2, "0");
+    root.querySelector(".specimen-title").textContent = entry.title;
+    root.querySelector(".specimen-description").textContent = entry.description;
+    fullscreenButton.setAttribute("aria-label", `Open ${entry.title} in fullscreen`);
+    toolbar?.setAttribute("aria-label", `${entry.title} recording controls`);
+    updateNavigation();
+    window.history.replaceState(window.history.state, "", detailUrl(entry).href);
+  };
+
+  const scene = createShowcaseScene({
+    surface, hud, records, initialId: item.id,
+    buttons: { single: singleButton, gallery: galleryButton },
+    resetButton, navigation, onSelect: updateSelection
+  });
+  surface.showcaseScene = scene;
+  resetButton.addEventListener("click", () => {
+    scene.reset();
+    wakeRecordingChrome(surface);
+  });
+  [[previousLink, -1], [nextLink, 1]].forEach(([link, offset]) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (scene.busy) return;
+      const next = ordered[(currentIndex + offset + ordered.length) % ordered.length];
+      scene.select(next.id);
+      wakeRecordingChrome(surface);
+    });
+  });
+  restoreShowcaseContent = () => scene.deactivate(item.id);
+  updateNavigation();
+}
+
 function SpecimenSection({
   index,
   title,
@@ -14878,11 +15245,14 @@ function SpecimenSection({
   header.append(indexElement, headingCopy);
 
   const surface = createElement("div", "demo-surface");
-  if (title === "Crystallizing" && requestedGallery === "draft") {
+  if (requestedRecordingPattern) {
+    surface.dataset.recordingPattern = requestedRecordingPattern;
+  } else if (title === "Crystallizing" && requestedGallery === "draft") {
     surface.dataset.recordingPattern = "frost";
-  } else if (title === "Robot Solve") {
+  } else if (title === "Robot Solve" && requestedGallery === "draft") {
     surface.dataset.recordingPattern = "reasoning-circuit";
   }
+  if (requestedRecordingSpeed) surface.dataset.recordingSpeed = requestedRecordingSpeed;
   const subject = createElement("div", "recording-subject");
   const contentPanel = createElement("div", "recording-content-panel");
   contentPanel.append(children);
@@ -15165,11 +15535,28 @@ const requestedResolveDuration = Number(experimentParams.get("resolveDuration") 
 const requestedCountDuration = Number(experimentParams.get("countDuration") || 3200);
 const requestedCopyFailure = experimentParams.get("copyFailure") === "true";
 const requestedEmbedded = experimentParams.get("embedded") === "true";
+const requestedImmersive = experimentParams.get("immersive") === "true";
 const requestedGallery = experimentParams.get("gallery") || "";
+const requestedPattern = experimentParams.get("pattern") || "";
+const requestedSpeed = experimentParams.get("speed") || "";
+const availableRecordingPatterns = new Set(
+  (requestedGallery === "draft" ? RECORDING_PATTERN_ARCHIVE : RECORDING_PATTERN_GROUPS)
+    .flatMap(([, options]) => options.map(([value]) => value))
+);
+const availableRecordingSpeeds = new Set(RECORDING_SPEEDS.map(([value]) => value));
+const requestedRecordingPattern = availableRecordingPatterns.has(requestedPattern) ? requestedPattern : "";
+const requestedRecordingSpeed = requestedGallery === "draft" && availableRecordingSpeeds.has(requestedSpeed)
+  ? requestedSpeed
+  : "";
 document.documentElement.dataset.gallery = requestedGallery || "public";
+if (requestedImmersive) document.documentElement.dataset.immersive = "true";
 const requestedSpecimen = experimentParams.get("specimen")?.padStart(2, "0") ?? null;
 const requestedDisplay = experimentParams.get("display")?.padStart(2, "0") ?? null;
 const requestedDraftKey = experimentParams.get("draft") ?? "";
+const PUBLIC_SHOWCASE_SPECIMEN_IDS = new Set([
+  "02", "05", "06", "18", "20", "23", "26", "29", "34", "47", "49", "51",
+  "56", "60", "64", "70", "75", "76", "79", "85", "148", "213", "284"
+]);
 const DRAFT_ACCESS_HASH = "cd8dc42c37c946e172c7606749f4aa847cc45e6ade0685e6ebf78817d35add98";
 
 async function validateDraftAccess(key) {
@@ -16258,8 +16645,10 @@ const focusStackSpecimen = SpecimenSection({ index: "35", title: "Z / Focus Stac
   children: focusStack.root, controls: focusStackSelector.root, className: "focus-stack-specimen compact-rhythm-specimen",
   sourceCodeActions: { title: "FocusStack", source: FOCUS_STACK_SOURCE } });
 
-const consensusField = ConsensusField({ variant: "merge", paused: requestedPaused,
-  initialElapsed: Number.isFinite(requestedElapsed) ? requestedElapsed : 0 });
+const consensusField = requestedSpecimen && requestedSpecimen !== "36"
+  ? { root: createElement("div", "consensus-field is-deferred"), setVariant() {}, destroy() {} }
+  : ConsensusField({ variant: "merge", paused: requestedPaused,
+    initialElapsed: Number.isFinite(requestedElapsed) ? requestedElapsed : 0 });
 const consensusFieldSelector = VariantSelector({ variants: Object.keys(CONSENSUS_FIELD_VARIANTS), selected: "merge",
   ariaLabel: "Merge mark variant", onChange: consensusField.setVariant });
 const consensusFieldSpecimen = SpecimenSection({ index: "36", title: "Merge Mark",
@@ -16267,8 +16656,10 @@ const consensusFieldSpecimen = SpecimenSection({ index: "36", title: "Merge Mark
   children: consensusField.root, controls: consensusFieldSelector.root, className: "consensus-field-specimen compact-rhythm-specimen",
   sourceCodeActions: { title: "MergeMark", source: CONSENSUS_FIELD_SOURCE } });
 
-const taskPipeline = TaskPipeline({ variant: "forward", paused: requestedPaused,
-  initialElapsed: Number.isFinite(requestedElapsed) ? requestedElapsed : 0 });
+const taskPipeline = requestedSpecimen && requestedSpecimen !== "37"
+  ? { root: createElement("div", "three-field is-deferred"), setVariant() {}, destroy() {} }
+  : TaskPipeline({ variant: "forward", paused: requestedPaused,
+    initialElapsed: Number.isFinite(requestedElapsed) ? requestedElapsed : 0 });
 const taskPipelineSelector = VariantSelector({ variants: Object.keys(TASK_PIPELINE_VARIANTS), selected: "forward",
   ariaLabel: "Depth relay variant", onChange: taskPipeline.setVariant });
 const taskPipelineSpecimen = SpecimenSection({ index: "37", title: "Depth Relay",
@@ -16619,7 +17010,16 @@ const extendedShapeDefinitions = [
 ];
 
 const extendedShapeSpecimens = extendedShapeDefinitions.map((definition) => {
-  const component = definition.factory({ label: definition.label, variant: definition.initialVariant, paused: requestedPaused, initialElapsed: requestedElapsed });
+  const shouldDefer = requestedSpecimen
+    && requestedSpecimen !== definition.index
+    && !PUBLIC_SHOWCASE_SPECIMEN_IDS.has(definition.index);
+  const component = shouldDefer
+    ? {
+        root: createElement("div", `${definition.componentClass} is-deferred`),
+        setVariant() {},
+        destroy() {}
+      }
+    : definition.factory({ label: definition.label, variant: definition.initialVariant, paused: requestedPaused, initialElapsed: requestedElapsed });
   const numericId = Number(definition.index);
   const hasAuthoredVariants = numericId < 103 || (numericId >= 128 && numericId <= 132) || (numericId >= 152 && numericId <= 286);
   const variantNames = hasAuthoredVariants ? Object.keys(definition.variants) : [definition.initialVariant];
@@ -16647,9 +17047,9 @@ const finiteStudyDefinitions = [
 ];
 
 const finiteStudySpecimens = finiteStudyDefinitions.map((definition) => {
-  const shouldDeferWebGL = definition.index === "101" && requestedSpecimen && requestedSpecimen !== "101";
-  const component = shouldDeferWebGL
-    ? { root: createElement("div", "depth-assembly is-deferred"), destroy() {} }
+  const shouldDefer = requestedSpecimen && requestedSpecimen !== definition.index;
+  const component = shouldDefer
+    ? { root: createElement("div", `${definition.componentClass} is-deferred`), destroy() {} }
     : definition.factory({ paused: requestedPaused });
   const specimen = SpecimenSection({
     index: definition.index,
@@ -16682,7 +17082,7 @@ const compactLoadingDefinitions = [
 ];
 
 const compactLoadingSpecimens = compactLoadingDefinitions.map((definition) => {
-  const shouldDefer = requestedSpecimen && requestedSpecimen !== definition.index;
+  const shouldDefer = requestedSpecimen && requestedSpecimen !== definition.index && definition.index !== "148";
   const component = shouldDefer
     ? { root: createElement("div", "compact-loading-family is-deferred"), destroy() {} }
     : CompactLoadingFamily({ state: definition.state, paused: requestedPaused });
@@ -16817,7 +17217,13 @@ if (!visibleRoots.length) {
   message.append(title, description, link);
   document.querySelector("#experiment")?.append(message);
 } else {
+  if (requestedCatalogItem && visibleRoots[0]) {
+    installShowcaseChrome({ root: visibleRoots[0], item: requestedCatalogItem, catalog });
+  }
   document.querySelector("#experiment")?.append(...visibleRoots);
+  if (requestedImmersive && visibleRoots[0]) {
+    enterRecordingMode(visibleRoots[0].querySelector(".demo-surface"));
+  }
 }
 window.addEventListener("pagehide", () => {
   loadingState.destroy();
@@ -16897,26 +17303,25 @@ window.addEventListener("message", (event) => {
 
   if (type === "experiment:fullscreen") {
     enterRecordingMode(surface);
+  } else if (type === "experiment:leave-fullscreen") {
+    leaveRecordingMode();
   } else if (type === "experiment:set-pattern" && payload?.pattern) {
     surface.dataset.recordingPattern = payload.pattern;
     activeRecordingBackdropRenderer?.setPattern?.(payload.pattern);
-    const patternSelect = surface.querySelector(".recording-pattern-select");
-    if (patternSelect) patternSelect.value = payload.pattern;
+    surface.querySelector('[data-recording-dropdown="pattern"]')?.setRecordingValue?.(payload.pattern);
   } else if (type === "experiment:next-pattern") {
     const current = surface.dataset.recordingPattern || "dither";
     const isDraft = new URLSearchParams(window.location.search).get("gallery") === "draft"
-      || window.location.pathname.includes("/draft")
-      || new Set(["localhost", "127.0.0.1", "::1"]).has(window.location.hostname);
+      || window.location.pathname.includes("/draft");
     const groups = isDraft ? RECORDING_PATTERN_ARCHIVE : RECORDING_PATTERN_GROUPS;
     const allPatterns = groups.flatMap(([, opts]) => opts.map(([p]) => p));
     const currentIndex = allPatterns.indexOf(current);
     const nextPattern = allPatterns[(currentIndex + 1) % allPatterns.length] || allPatterns[0];
     surface.dataset.recordingPattern = nextPattern;
     activeRecordingBackdropRenderer?.setPattern?.(nextPattern);
-    const patternSelect = surface.querySelector(".recording-pattern-select");
-    if (patternSelect) patternSelect.value = nextPattern;
+    surface.querySelector('[data-recording-dropdown="pattern"]')?.setRecordingValue?.(nextPattern);
   } else if (type === "experiment:next-variant") {
-    const variantSelect = surface.querySelector(".variant-selector select") || surface.querySelector(".variant-select");
+    const variantSelect = surface.querySelector(".variant-selector:not([hidden]) select") || surface.querySelector(".variant-select");
     if (variantSelect) {
       variantSelect.selectedIndex = (variantSelect.selectedIndex + 1) % variantSelect.options.length;
       variantSelect.dispatchEvent(new Event("change", { bubbles: true }));

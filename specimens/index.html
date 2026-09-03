@@ -6,8 +6,28 @@
   <meta name="theme-color" content="#fafafb" />
   <title>Interactive Component Experiments</title>
   <meta name="description" content="Interactive component specimens for motion, search, workflow, and interface states." />
-  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" sizes="any" href="../assets/favicon.svg?v=2" />
+  <script>
+    (() => {
+      const params = new URLSearchParams(window.location.search);
+      const root = document.documentElement;
+      const theme = params.get("theme") === "dark" ? "dark" : "light";
+      root.dataset.theme = theme;
+      root.dataset.gallery = params.get("gallery") || "public";
+      if (params.get("embedded") === "true") root.dataset.embedded = "true";
+      if (params.get("immersive") === "true") root.dataset.immersive = "true";
+      if (params.get("motion") === "reduce") root.dataset.motion = "reduce";
+      document.querySelector('meta[name="theme-color"]')?.setAttribute(
+        "content",
+        theme === "dark" ? "#17181a" : "#fafafb"
+      );
+    })();
+  </script>
+  <style>html{background:#fafafb}html[data-theme="dark"]{background:#17181a}</style>
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./showcase-scene.css" />
+  <link rel="stylesheet" href="./preview.css" />
+  <link rel="stylesheet" href="../assets/fonts/gentium-plus.css" />
 </head>
 <body>
   <a class="detail-back" href="../" aria-label="Back to Loading collection"><span aria-hidden="true">←</span> Loading</a>

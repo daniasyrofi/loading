@@ -1,0 +1,384 @@
+/* Appearance belongs to the original components. This file owns only the
+   persistent scene, fixed HUD, clipping and motion. */
+.showcase-hud,
+.showcase-viewport,
+.showcase-world,
+.showcase-node,
+.showcase-node__motion { display: contents; }
+.showcase-mode-switch,
+.showcase-node__hit { display: none; }
+.showcase-hud [hidden] { display: none !important; }
+.showcase-hud > .variant-selector {
+  z-index: 6;
+  min-height: 32px;
+  padding: 3px;
+  box-shadow: var(--shadow-control);
+}
+.showcase-hud > .variant-selector button { min-height: 26px; padding-inline: 10px; }
+.has-persistent-scene:not(:is(:fullscreen, .is-recording-fallback))
+  .showcase-node:not(.is-scene-anchor) { display: none; }
+
+html[data-immersive="true"], html[data-immersive="true"] body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+html[data-immersive="true"] #experiment > .specimen-section {
+  animation: none;
+  transform: none;
+  filter: none;
+}
+html body #experiment .demo-surface.has-persistent-scene:is(:fullscreen, .is-recording-fallback) {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) > .recording-backdrop {
+  position: fixed;
+  inset: 0;
+  transform: none;
+  transition: none;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) > .showcase-viewport {
+  position: fixed;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  contain: layout paint;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Four-sided fade reserves HUD space without moving the field. */
+  mask-image:
+    linear-gradient(to right, transparent, #000 min(84px, 14%), #000 calc(100% - min(84px, 14%)), transparent),
+    linear-gradient(to bottom, transparent min(48px, 5%), #000 min(120px, 18%), #000 calc(100% - min(144px, 20%)), transparent calc(100% - min(48px, 5%)));
+  mask-composite: intersect;
+}
+.has-persistent-scene[data-scene-state="gallery"] > .showcase-viewport { cursor: grab; }
+.has-persistent-scene[data-scene-state="gallery"] > .showcase-viewport.is-dragging { cursor: grabbing; }
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-world {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-node {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: max-content;
+  height: max-content;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  transform: translate3d(-50%, -50%, 0) scale(var(--scene-card-scale, 1.24));
+  transform-origin: center;
+  backface-visibility: hidden;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-node__motion {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  transform: translate3d(0, 0, 0);
+  transform-origin: center;
+  backface-visibility: hidden;
+}
+.has-persistent-scene.is-scene-busy .showcase-node:not(.is-scene-anchor) > .showcase-node__motion {
+  will-change: transform, opacity;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-node.is-scene-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+.has-persistent-scene .is-scene-hidden .recording-content-panel *,
+.has-persistent-scene .is-scene-hidden .recording-content-panel *::before,
+.has-persistent-scene .is-scene-hidden .recording-content-panel *::after {
+  animation-play-state: paused !important;
+}
+.has-persistent-scene .is-scene-offscreen .recording-content-panel *,
+.has-persistent-scene .is-scene-offscreen .recording-content-panel *::before,
+.has-persistent-scene .is-scene-offscreen .recording-content-panel *::after {
+  animation-play-state: paused !important;
+}
+/* Animate the complete original card, never its empty shell. */
+html body #experiment .has-persistent-scene:is(:fullscreen, .is-recording-fallback)
+  .showcase-node .recording-subject {
+  position: relative;
+  inset: auto;
+  max-width: none;
+  max-height: none;
+  flex: none;
+  opacity: 1;
+  visibility: visible;
+  translate: none;
+  scale: none;
+  transform: none;
+  filter: none;
+  transition: none;
+}
+html body #experiment .has-persistent-scene:is(:fullscreen, .is-recording-fallback)
+  .showcase-node .recording-content-panel {
+  opacity: 1;
+  translate: none;
+  transform: none;
+  filter: none;
+  transition: none;
+}
+html body #experiment .has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-node :is(
+  .elapsed-timer, .signal-relay__timer, .orbit-status__timer, .sweep-track__timer,
+  .rhythm-status__timer, .compact-loading-family__time, .kettle-whistle__time
+) {
+  box-sizing: content-box;
+  width: 10ch;
+  min-width: 10ch;
+  max-width: 10ch;
+  flex: 0 0 10ch;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+.has-persistent-scene .showcase-node .beacon-indicator {
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+.has-persistent-scene .showcase-node .beacon-indicator__bar { flex: 0 0 2px; }
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-node__hit {
+  position: absolute;
+  inset: -4px;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+.has-persistent-scene .showcase-node__hit:disabled { pointer-events: none; }
+.showcase-node__hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* HUD siblings never inherit the camera or its clipping mask. */
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) > .showcase-hud {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > :is(
+  .showcase-timing, .recording-toolbar, .variant-selector, [data-media-player], .showcase-media-player
+) { pointer-events: auto; }
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .showcase-primary-actions { display: contents; }
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud .specimen-action--fullscreen { display: none; }
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .recording-toolbar {
+  /* Match the mode switch's safe-area inset, including while chrome is idle. */
+  transform: none;
+  translate: none;
+  left: auto;
+  width: fit-content;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .showcase-timing {
+  position: fixed;
+  z-index: 9;
+  top: max(var(--recording-chrome-inset), env(safe-area-inset-top));
+  left: max(var(--recording-chrome-inset), env(safe-area-inset-left));
+  gap: 8px;
+  isolation: isolate;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-timing .showcase-reset {
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--line-strong) 82%, transparent), 0 8px 24px rgb(8 15 28 / 14%);
+  backdrop-filter: blur(18px) saturate(1.15);
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-mode-switch {
+  position: relative;
+  display: flex;
+  width: max-content;
+  min-height: 40px;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--line-strong) 82%, transparent), 0 8px 24px rgb(8 15 28 / 12%);
+  backdrop-filter: blur(18px) saturate(1.15);
+}
+.showcase-mode-switch::before {
+  content: "";
+  position: absolute;
+  inset: 3px auto 3px 3px;
+  width: calc((100% - 8px) / 2);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: var(--shadow-control);
+  transform: translate3d(0, 0, 0);
+  transition: transform 220ms cubic-bezier(.22, 1, .36, 1);
+  pointer-events: none;
+}
+[data-showcase-mode="gallery"] .showcase-mode-switch::before { transform: translate3d(calc(100% + 2px), 0, 0); }
+.showcase-mode-button {
+  position: relative;
+  z-index: 1;
+  min-width: 68px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 560;
+}
+.showcase-mode-button[aria-pressed="true"] { color: var(--ink); }
+.showcase-mode-button:disabled { cursor: default; }
+.showcase-mode-button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .variant-selector {
+  position: fixed;
+  z-index: 6;
+  top: auto;
+  right: auto;
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 24px));
+  left: 50%;
+  min-height: 32px;
+  max-width: calc(100vw - 32px);
+  padding: 3px;
+  transform: translateX(-50%);
+  translate: none;
+  opacity: 1;
+  filter: none;
+  transition: none;
+  box-shadow: var(--shadow-control);
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .variant-selector button {
+  min-height: 26px;
+  padding: 3px 9px;
+}
+/* Keep the refresh slot in layout: hiding Single-only controls never moves
+   the mode switch. Visibility changes only after their exit finishes. */
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud .showcase-reset {
+  opacity: 1;
+  visibility: visible;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 160ms cubic-bezier(.22, 1, .36, 1),
+    transform 160ms cubic-bezier(.22, 1, .36, 1), visibility 0s;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .variant-selector {
+  visibility: visible;
+  transform: translate3d(-50%, 0, 0) scale(1);
+  transition: opacity 200ms cubic-bezier(.22, 1, .36, 1),
+    transform 200ms cubic-bezier(.22, 1, .36, 1), visibility 0s;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback):not([data-scene-state="single"])
+  .showcase-hud .showcase-reset {
+  opacity: 0;
+  visibility: hidden;
+  transform: translate3d(-6px, 0, 0);
+  pointer-events: none;
+  transition-delay: 0s, 0s, 160ms;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback):not([data-scene-state="single"])
+  .showcase-hud > .variant-selector {
+  opacity: 0;
+  visibility: hidden;
+  transform: translate3d(-50%, 10px, 0) scale(.97);
+  pointer-events: none;
+  transition-delay: 0s, 0s, 200ms;
+}
+.has-persistent-scene .showcase-hud [inert] { pointer-events: none; }
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-navigation {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 160ms ease-out, visibility 0s;
+}
+.has-persistent-scene:is(:fullscreen, .is-recording-fallback):not([data-scene-state="single"]) .showcase-navigation {
+  opacity: 0;
+  visibility: hidden;
+  transition-delay: 0s, 160ms;
+}
+.has-persistent-scene .showcase-navigation[inert] .showcase-navigation__link { pointer-events: none; }
+.recording-theme-select { display: none; }
+.showcase-hud > :is([data-media-player], .showcase-media-player) { backface-visibility: hidden; }
+.has-persistent-scene.is-scene-busy .showcase-hud > :is([data-media-player], .showcase-media-player) {
+  will-change: transform, opacity;
+}
+.has-persistent-scene.is-scene-busy .showcase-node__hit,
+.has-persistent-scene.is-scene-busy .showcase-navigation__link { pointer-events: none; }
+@media (max-width: 820px) {
+  .has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .showcase-timing {
+    top: max(var(--recording-chrome-inset), env(safe-area-inset-top));
+  }
+}
+@media (max-width: 680px) {
+  .has-persistent-scene .recording-theme-switch { display: none; }
+  .has-persistent-scene .recording-theme-select { display: flex; }
+  .has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .showcase-timing {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .has-persistent-scene .recording-theme-select .recording-select-trigger { min-width: 68px; }
+  .has-persistent-scene .recording-theme-select .recording-select-menu { min-width: 132px; }
+  .has-persistent-scene .recording-select-option { min-height: 40px; }
+  .has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .showcase-navigation {
+    position: fixed;
+    inset: auto max(var(--recording-chrome-inset), env(safe-area-inset-right)) max(20px, calc(env(safe-area-inset-bottom) + 20px)) max(var(--recording-chrome-inset), env(safe-area-inset-left));
+    display: flex;
+    justify-content: space-between;
+    width: auto;
+    transform: none;
+  }
+  .has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-navigation__link {
+    position: static;
+    translate: none;
+    width: 40px;
+    height: 40px;
+  }
+}
+@media (max-width: 420px) {
+  .showcase-mode-button { min-width: 62px; padding-inline: 9px; }
+  .has-persistent-scene .recording-select-trigger { max-width: 78px; }
+}
+@media (max-width: 380px) {
+  .showcase-mode-button { min-width: 54px; padding-inline: 5px; font-size: 11px; }
+  .has-persistent-scene:is(:fullscreen, .is-recording-fallback) .showcase-hud > .recording-toolbar { gap: 4px; }
+  .has-persistent-scene .recording-select-trigger {
+    width: 60px;
+    min-width: 0;
+    padding-inline: 5px;
+    gap: 3px;
+    font-size: 11px;
+  }
+  .has-persistent-scene .recording-theme-select .recording-select-trigger { width: 56px; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .showcase-mode-switch::before { transition: none; }
+  .has-persistent-scene .showcase-hud .showcase-reset,
+  .has-persistent-scene .showcase-hud > .variant-selector,
+  .has-persistent-scene .showcase-navigation { transition-duration: 0s !important; transition-delay: 0s !important; }
+}
+:root[data-motion="reduce"] .showcase-mode-switch::before { transition: none; }
+:root[data-motion="reduce"] .has-persistent-scene .showcase-hud .showcase-reset,
+:root[data-motion="reduce"] .has-persistent-scene .showcase-hud > .variant-selector,
+:root[data-motion="reduce"] .has-persistent-scene .showcase-navigation { transition-duration: 0s !important; transition-delay: 0s !important; }

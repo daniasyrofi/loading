@@ -4,10 +4,28 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#050505" />
-  <title>Loading — States in motion</title>
-  <meta name="description" content="A visual index of loading states, progress patterns, and system activity by Dani Asyrofi." />
-  <link rel="preload" href="./assets/fonts/inter-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+  <title>Loading — Animated loaders for moments in between</title>
+  <meta name="description" content="A collection of animated loaders, progress indicators, and playful waiting states. Explore the motion studies by Dani Asyrofi." />
+  <link rel="canonical" href="https://loading.daniasyrofi.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Loading" />
+  <meta property="og:title" content="Loading — Animated loaders for moments in between" />
+  <meta property="og:description" content="A collection of animated loaders, progress indicators, and playful waiting states. Explore the motion studies by Dani Asyrofi." />
+  <meta property="og:url" content="https://loading.daniasyrofi.com/" />
+  <meta property="og:image" content="https://loading.daniasyrofi.com/assets/og-image.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="2400" />
+  <meta property="og:image:height" content="1260" />
+  <meta property="og:image:alt" content="Collection of Loading Animations — animated loading indicators on a dark blue pixel background." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:creator" content="@dani_asyrofi" />
+  <meta name="twitter:title" content="Loading — Animated loaders for moments in between" />
+  <meta name="twitter:description" content="A collection of animated loaders, progress indicators, and playful waiting states by Dani Asyrofi." />
+  <meta name="twitter:image" content="https://loading.daniasyrofi.com/assets/og-image.png" />
+  <meta name="twitter:image:alt" content="Collection of Loading Animations — animated loading indicators on a dark blue pixel background." />
+  <link rel="preload" href="./assets/fonts/gentium-plus-latin-regular.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="./assets/fonts/gentium-plus.css" />
+  <link rel="icon" type="image/svg+xml" sizes="any" href="./assets/favicon.svg?v=2" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -21,7 +39,7 @@
       <a class="icon-button" href="https://github.com/daniasyrofi/loading" target="_blank" rel="noopener noreferrer" aria-label="View Loading on GitHub">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.75a9.5 9.5 0 0 0-3 18.51c.48.09.65-.2.65-.46v-1.67c-2.67.58-3.23-1.13-3.23-1.13-.44-1.1-1.07-1.4-1.07-1.4-.87-.6.07-.58.07-.58.96.07 1.47.99 1.47.99.86 1.46 2.25 1.04 2.8.8.09-.62.34-1.04.61-1.28-2.13-.24-4.37-1.06-4.37-4.75 0-1.05.38-1.91.99-2.58-.1-.24-.43-1.22.1-2.54 0 0 .8-.26 2.61.98A9.1 9.1 0 0 1 12 7.33a9 9 0 0 1 2.38.32c1.81-1.24 2.61-.98 2.61-.98.53 1.32.2 2.3.1 2.54.62.67.99 1.53.99 2.58 0 3.7-2.25 4.5-4.39 4.74.35.3.65.88.65 1.77v2.5c0 .26.18.56.66.46A9.5 9.5 0 0 0 12 2.75Z" /></svg>
       </a>
-      <a class="icon-button" href="https://x.com/daniasyrofi" target="_blank" rel="noopener noreferrer" aria-label="Dani Asyrofi on X">
+      <a class="icon-button" href="https://x.com/dani_asyrofi" target="_blank" rel="noopener noreferrer" aria-label="Dani Asyrofi on X">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h3.75l3.96 5.3 4.7-5.3H19l-5.55 6.28L19.5 19.5h-3.74l-4.48-6.08-5.38 6.08H4.3l6.24-7.06L5 4.5Zm2.4 1.2 9 12.6h1.7l-9-12.6H7.4Z" /></svg>
       </a>
     </nav>
@@ -31,38 +49,34 @@
     <section class="intro" aria-labelledby="page-title">
       <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <h1 id="page-title">Loading</h1>
-      <p>Loading states, progress patterns, and motion experiments.</p>
+      <p>Animated loaders for moments in between.</p>
     </section>
 
-    <div class="collection-nav">
-      <div class="category-tabs" role="tablist" aria-label="Loading categories">
-        <button class="category-tab is-active" type="button" role="tab" aria-selected="true" data-category="indeterminate">Indeterminate activity</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="determinate">Determinate progress</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="systems">System feedback</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="agent">Agent activity</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="physical">Physical process</button>
-        <button class="category-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-category="experimental">Experimental</button>
-      </div>
-    </div>
-
-    <section class="specimen-grid" aria-label="Indeterminate activity specimens" aria-live="polite" data-specimen-grid></section>
+    <section class="specimen-grid" aria-label="Loading collection" data-specimen-grid></section>
   </main>
 
   <footer class="site-footer page-width">
-    <span>Dani Asyrofi · Jakarta</span>
-    <span><span data-specimen-count>6</span> selected specimens</span>
+    <p>By <a href="https://x.com/dani_asyrofi" target="_blank" rel="noopener noreferrer">Dani Asyrofi</a></p>
   </footer>
 
   <template data-specimen-template>
-    <a class="specimen-tile" target="_blank" rel="noopener noreferrer">
-      <picture>
-        <source class="specimen-webp" type="image/webp" />
-        <img class="specimen-poster" alt="" width="1120" height="600" decoding="async" />
-      </picture>
-      <span class="tile-action" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg>
-      </span>
-    </a>
+    <article class="specimen-tile">
+      <iframe
+        class="specimen-frame"
+        title=""
+        loading="eager"
+        allow="fullscreen"
+        tabindex="-1"
+        aria-hidden="true"
+        inert
+        srcdoc="<style>html,body{min-height:100%;margin:0;background:#0d0d0e}</style>"
+      ></iframe>
+      <button class="tile-link" type="button">
+        <span class="tile-action" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+        </span>
+      </button>
+    </article>
   </template>
 
   <script defer src="./app.js"></script>

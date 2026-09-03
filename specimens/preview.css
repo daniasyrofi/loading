@@ -1,0 +1,180 @@
+/* Collection previews show only the component. Fullscreen restores the
+   authored component and all of its controls through data-immersive. */
+html[data-embedded="true"]:not([data-immersive="true"]) {
+  --preview-canvas: #f5f5f5;
+  --preview-surface: #ededee;
+  --preview-inset: #fff;
+  --preview-edge: rgba(0, 0, 0, 0.055);
+}
+
+html[data-embedded="true"][data-theme="dark"]:not([data-immersive="true"]) {
+  --preview-canvas: #0d0d0e;
+  --preview-surface: #1b1b1d;
+  --preview-inset: #121213;
+  --preview-edge: rgba(255, 255, 255, 0.055);
+}
+
+html[data-embedded="true"]:not([data-immersive="true"]) body #experiment .demo-surface {
+  min-height: 100vh;
+  height: 100vh;
+  padding: 20px;
+  overflow: hidden;
+  background: var(--preview-canvas);
+}
+
+html[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
+  .showcase-hud,
+  .showcase-timing,
+  .showcase-primary-actions,
+  .variant-selector,
+  .playback-control,
+  .replay-control,
+  .signal-pause,
+  .phase-pause
+) {
+  display: none !important;
+}
+
+html[data-embedded="true"]:not([data-immersive="true"]) body #experiment .recording-content-panel {
+  --preview-radius: 18px;
+  --preview-rim: 6px;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  width: min(320px, calc(100vw - 32px));
+  min-height: 68px;
+  align-items: center;
+  padding: 18px 22px;
+  border-radius: var(--preview-radius);
+  background: var(--preview-surface);
+  box-shadow:
+    0 0 0 1px var(--preview-edge),
+    inset 0 1px 0 var(--preview-edge);
+}
+
+html[data-embedded="true"]:not([data-immersive="true"]) body #experiment .recording-content-panel > * {
+  width: 100%;
+  min-width: 0;
+}
+
+html[data-embedded="true"]:not([data-immersive="true"]) body #experiment .recording-content-panel::before {
+  position: absolute;
+  z-index: -1;
+  inset: var(--preview-rim);
+  border-radius: calc(var(--preview-radius) - var(--preview-rim));
+  background: var(--preview-inset);
+  box-shadow: 0 0 0 1px var(--preview-edge);
+  content: "";
+  pointer-events: none;
+}
+
+html[data-embedded="true"]:not([data-immersive="true"]) body #experiment .demo-surface :is(
+  .signal-relay__row,
+  .orbit-status__row,
+  .sweep-track__row,
+  .rhythm-status__row,
+  .compact-loading-family
+) {
+  width: 100%;
+  min-height: 28px;
+  grid-template-columns: 41px minmax(0, 1fr) max-content;
+  column-gap: 10px;
+}
+
+html[data-embedded="true"]:not([data-immersive="true"]) body #experiment .demo-surface :is(
+  .signal-relay__row,
+  .orbit-status__row,
+  .sweep-track__row,
+  .rhythm-status__row,
+  .compact-loading-family
+) > :first-child {
+  justify-self: center;
+}
+
+html[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
+  .elapsed-timer,
+  .compact-loading-family__time,
+  .kettle-whistle__time
+) {
+  display: block;
+  width: 9ch;
+  min-width: 9ch;
+  max-width: 9ch;
+  justify-self: end;
+  padding: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+html[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
+  .signal-relay__label,
+  .orbit-status__label,
+  .sweep-track__label,
+  .rhythm-status__label,
+  .compact-loading-family__label,
+  .kettle-whistle__label
+) {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  font-family: "Gentium Plus", Georgia, serif;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The shorter cards present a smaller component, as a real size comparison. */
+@media (max-height: 220px) {
+  html[data-embedded="true"]:not([data-immersive="true"]) body #experiment .recording-content-panel {
+    --preview-radius: 14px;
+    --preview-rim: 4px;
+    width: min(300px, calc(100vw - 32px));
+    min-height: 52px;
+    padding: 12px 18px;
+  }
+
+  html[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
+    .signal-relay__label,
+    .orbit-status__label,
+    .sweep-track__label,
+    .rhythm-status__label,
+    .compact-loading-family__label,
+    .kettle-whistle__label
+  ) {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 360px) {
+  html[data-embedded="true"]:not([data-immersive="true"]) body #experiment .recording-content-panel {
+    width: min(320px, calc(100vw - 24px));
+    padding-inline: 14px;
+  }
+
+  html[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
+    .signal-relay__label,
+    .orbit-status__label,
+    .sweep-track__label,
+    .rhythm-status__label,
+    .compact-loading-family__label,
+    .kettle-whistle__label
+  ) {
+    font-size: 15px;
+  }
+
+  html[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
+    .elapsed-timer,
+    .compact-loading-family__time,
+    .kettle-whistle__time
+  ) {
+    font-size: 10px;
+  }
+}

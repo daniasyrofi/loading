@@ -1,0 +1,7 @@
+@font-face {
+  font-family: "Gentium Plus";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./gentium-plus-latin-regular.woff2") format("woff2");
+}
