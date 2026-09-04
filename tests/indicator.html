@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loading indicator integration checks</title>
+<style>
+  body { margin:32px; font:15px/1.6 system-ui; background:#111; color:#ddd; }
+  #fixtures { display:flex; flex-wrap:wrap; gap:32px; padding:32px 0; }
+  #isolation { width:19px; height:19px; background:teal; }
+  .pass { color:#9dcaac; } .fail { color:#e6a4a4; }
+</style>
+<h1>Standalone component checks</h1>
+<p>This page imports the same runtime used by the playground and installation examples.</p>
+<div id="fixtures"></div>
+<span class="register-indicator" id="isolation"></span>
+<button id="run">Run checks</button>
+<ul id="results" role="status"></ul>
+<script type="module">
+import { loadingAnimations } from '../indicator.js';
+const fixtures = document.querySelector('#fixtures');
+for (const {id, label} of loadingAnimations) {
+  const element = document.createElement('loading-indicator');
+  element.setAttribute('animation', id);
+  element.setAttribute('size', '64');
+  element.setAttribute('aria-label', label);
+  fixtures.append(element);
+}
+const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+document.querySelector('#run').addEventListener('click', async () => {
+  const results = document.querySelector('#results');
+  results.replaceChildren();
+  const check = (name, passes) => {
+    const li = document.createElement('li');
+    li.className = passes ? 'pass' : 'fail';
+    li.textContent = `${passes ? 'PASS' : 'FAIL'}: ${name}`;
+    results.append(li);
+  };
+  for (const element of fixtures.children) {
+    await frame();
+    const stage = element.shadowRoot.querySelector('.stage');
+    const animations = stage.getAnimations({subtree:true});
+    check(`${element.getAttribute('animation')} has active motion`, animations.length > 0 && animations.every(a=>a.playState==='running'));
+    const bounds = element.getBoundingClientRect();
+    check(`${element.getAttribute('animation')} respects the 64px size`, Math.abs(bounds.width-64)<.1 && Math.abs(bounds.height-64)<.1);
+  }
+  const element = fixtures.children[0];
+  element.setAttribute('speed','2');
+  await frame();
+  let animations = element.shadowRoot.querySelector('.stage').getAnimations({subtree:true});
+  check('Speed reaches every animated part', animations.every(a=>a.playbackRate===2));
+  element.setAttribute('paused','');
+  await frame();
+  const frozen = animations.map(a=>a.currentTime);
+  await new Promise(resolve=>setTimeout(resolve,100));
+  check('Pause freezes the current frame', animations.every((a,i)=>a.playState==='paused' && a.currentTime===frozen[i]));
+  element.removeAttribute('paused');
+  await frame();
+  check('Resume continues from the paused frame', animations.every((a,i)=>a.playState==='running' && a.currentTime>=frozen[i]));
+  element.setAttribute('size','not-a-number');
+  check('Invalid size falls back safely', Math.abs(element.getBoundingClientRect().width-32)<.1);
+  element.setAttribute('animation','missing');
+  await frame();
+  check('Unknown animation falls back to Orbit', !!element.shadowRoot.querySelector('.orbit-indicator'));
+  check('Styles do not leak into the page', getComputedStyle(document.querySelector('#isolation')).display==='inline');
+  element.remove();
+  animations = element.shadowRoot.querySelector('.stage').getAnimations({subtree:true});
+  check('Detached component stops its animations', animations.every(a=>a.playState!=='running'));
+  fixtures.prepend(element);
+  element.setAttribute('animation','orbit');
+  element.setAttribute('size','64');
+  element.setAttribute('speed','1');
+});
+</script>
+</html>

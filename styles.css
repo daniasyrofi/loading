@@ -30,7 +30,7 @@ body {
   margin: 0;
   background: var(--page);
   color: var(--ink);
-  font-family: "Gentium Plus", Georgia, serif;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
   font-size: 16px;
   line-height: 1.5;
 }
@@ -61,6 +61,50 @@ p {
 .page-width {
   width: min(calc(100% - 40px), 960px);
   margin-inline: auto;
+}
+
+.shooting-sky {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 360px;
+  overflow: hidden;
+  contain: paint;
+  pointer-events: none;
+}
+
+.shooting-star {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--star-tail, 60px);
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(245, 245, 245, 0.34) 72%, rgba(255, 255, 255, 0.92));
+  box-shadow: 1px 0 5px rgba(255, 255, 255, 0.24);
+  opacity: 0;
+  transform-origin: right center;
+}
+
+.shooting-star::after {
+  position: absolute;
+  top: 50%;
+  right: -1px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.55);
+  content: "";
+  translate: 0 -50%;
+}
+
+.site-header,
+.intro {
+  position: relative;
+  z-index: 1;
 }
 
 .site-header {
@@ -219,6 +263,7 @@ p {
 .brand-mark span:nth-child(9) { animation-delay: -560ms; }
 
 .intro h1 {
+  font-family: "Gentium Plus", Georgia, serif;
   font-size: 36px;
   font-weight: 400;
   letter-spacing: -0.015em;
@@ -298,41 +343,6 @@ p {
   text-decoration: none;
 }
 
-.specimen-frame.is-immersive-fallback {
-  position: fixed;
-  z-index: 1000;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden;
-  overscroll-behavior: none;
-  background: #07101d;
-  opacity: 0;
-  pointer-events: auto;
-  filter: blur(4px);
-  scale: 0.985;
-}
-
-.specimen-frame.is-immersive-fallback.is-immersive-ready,
-.specimen-frame:fullscreen {
-  opacity: 1;
-  filter: blur(0);
-  scale: 1;
-  pointer-events: auto;
-}
-
-.specimen-tile:has(.is-immersive-fallback) {
-  z-index: 10;
-  overflow: visible;
-  isolation: auto;
-}
-
-html.has-immersive-fallback,
-html.has-immersive-fallback body {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
 .specimen-tile:has(.tile-link:active) {
   scale: 0.96;
 }
@@ -340,6 +350,22 @@ html.has-immersive-fallback body {
 .tile-link:focus-visible {
   outline: 2px solid #fff;
   outline-offset: -3px;
+}
+
+.tile-name {
+  position: absolute;
+  top: 20px;
+  left: 22px;
+  max-width: calc(100% - 88px);
+  overflow: hidden;
+  color: var(--secondary);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 180ms var(--ease);
 }
 
 .tile-action {
@@ -354,11 +380,11 @@ html.has-immersive-fallback body {
   border-radius: 10px;
   background: transparent;
   color: var(--secondary);
-  opacity: 0;
-  scale: 0.25;
-  filter: blur(4px);
+  opacity: 0.42;
+  scale: 1;
+  filter: none;
   backdrop-filter: none;
-  transition-property: opacity, scale, filter;
+  transition-property: opacity, translate;
   transition-duration: 300ms;
   transition-timing-function: var(--ease);
 }
@@ -375,15 +401,21 @@ html.has-immersive-fallback body {
 
 .tile-link:focus-visible .tile-action {
   opacity: 1;
-  scale: 1;
-  filter: blur(0);
+  translate: 2px 0;
+}
+
+.tile-link:focus-visible .tile-name {
+  color: var(--ink);
 }
 
 @media (hover: hover) {
   .specimen-tile:hover .tile-action {
     opacity: 1;
-    scale: 1;
-    filter: blur(0);
+    translate: 2px 0;
+  }
+
+  .specimen-tile:hover .tile-name {
+    color: var(--ink);
   }
 }
 
@@ -492,6 +524,10 @@ html.has-immersive-fallback body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .shooting-sky {
+    display: none;
+  }
+
   .brand-mark span {
     animation: none;
     opacity: 0.55;

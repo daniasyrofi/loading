@@ -25,10 +25,17 @@
   <meta name="twitter:image:alt" content="Collection of Loading Animations — animated loading indicators on a dark blue pixel background." />
   <link rel="preload" href="./assets/fonts/gentium-plus-latin-regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="./assets/fonts/gentium-plus.css" />
+  <link rel="preload" href="./assets/fonts/plus-jakarta-sans-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="./assets/fonts/plus-jakarta-sans.css" />
   <link rel="icon" type="image/svg+xml" sizes="any" href="./assets/favicon.svg?v=2" />
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./playground.css" />
 </head>
 <body>
+  <div class="shooting-sky" data-shooting-sky aria-hidden="true">
+    <span class="shooting-star"></span>
+    <span class="shooting-star"></span>
+  </div>
   <header class="site-header page-width" aria-label="Loading navigation">
     <a class="back-link" href="https://daniasyrofi.com" aria-label="Back to daniasyrofi.com">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.75-5 5.25 5 5.25" /></svg>
@@ -36,9 +43,6 @@
     </a>
 
     <nav class="header-actions" aria-label="Project links">
-      <a class="icon-button" href="https://github.com/daniasyrofi/loading" target="_blank" rel="noopener noreferrer" aria-label="View Loading on GitHub">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.75a9.5 9.5 0 0 0-3 18.51c.48.09.65-.2.65-.46v-1.67c-2.67.58-3.23-1.13-3.23-1.13-.44-1.1-1.07-1.4-1.07-1.4-.87-.6.07-.58.07-.58.96.07 1.47.99 1.47.99.86 1.46 2.25 1.04 2.8.8.09-.62.34-1.04.61-1.28-2.13-.24-4.37-1.06-4.37-4.75 0-1.05.38-1.91.99-2.58-.1-.24-.43-1.22.1-2.54 0 0 .8-.26 2.61.98A9.1 9.1 0 0 1 12 7.33a9 9 0 0 1 2.38.32c1.81-1.24 2.61-.98 2.61-.98.53 1.32.2 2.3.1 2.54.62.67.99 1.53.99 2.58 0 3.7-2.25 4.5-4.39 4.74.35.3.65.88.65 1.77v2.5c0 .26.18.56.66.46A9.5 9.5 0 0 0 12 2.75Z" /></svg>
-      </a>
       <a class="icon-button" href="https://x.com/dani_asyrofi" target="_blank" rel="noopener noreferrer" aria-label="Dani Asyrofi on X">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h3.75l3.96 5.3 4.7-5.3H19l-5.55 6.28L19.5 19.5h-3.74l-4.48-6.08-5.38 6.08H4.3l6.24-7.06L5 4.5Zm2.4 1.2 9 12.6h1.7l-9-12.6H7.4Z" /></svg>
       </a>
@@ -53,6 +57,54 @@
     </section>
 
     <section class="specimen-grid" aria-label="Loading collection" data-specimen-grid></section>
+
+    <section class="integration" id="playground" aria-label="Use Loading in your project">
+      <div class="integration-section">
+        <div class="section-heading">
+          <h2 id="installation-title">Installation</h2>
+          <div class="framework-options" role="group" aria-label="Code format">
+            <button type="button" data-framework="react" aria-pressed="true">React</button>
+            <button type="button" data-framework="html" aria-pressed="false">HTML</button>
+          </div>
+        </div>
+        <div class="code-panel">
+          <pre tabindex="0" aria-labelledby="installation-title"><code data-install-code></code></pre>
+          <button class="copy-code" type="button" data-copy="install" aria-label="Copy install command"><svg class="copy-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M15 5V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1"/></svg><svg class="check-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+        </div>
+        <p class="integration-note" data-install-note>Run once from your project root. Loading is copied into <code>components/ui</code>.</p>
+      </div>
+
+      <div class="integration-section">
+        <div class="section-heading"><h2 id="usage-title">Usage</h2></div>
+        <div class="code-panel">
+          <pre tabindex="0" aria-labelledby="usage-title"><code data-usage-code></code></pre>
+          <button class="copy-code" type="button" data-copy="usage" aria-label="Copy usage code"><svg class="copy-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M15 5V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1"/></svg><svg class="check-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button>
+        </div>
+      </div>
+
+      <div class="integration-section">
+        <div class="section-heading"><h2 id="playground-title">Playground</h2><button class="reset-playground" type="button">Reset</button></div>
+        <div class="playground-controls" aria-labelledby="playground-title">
+          <fieldset class="animation-field"><legend>Animation</legend><div class="animation-options" data-animation-options></div></fieldset>
+          <div class="playground-settings">
+            <fieldset><legend>Size</legend><div class="size-options" role="group" aria-label="Indicator size">
+              <button type="button" data-size="64" aria-pressed="true">64<span>px</span></button>
+              <button type="button" data-size="32" aria-pressed="false">32<span>px</span></button>
+              <button type="button" data-size="20" aria-pressed="false">20<span>px</span></button>
+            </div></fieldset>
+            <div class="speed-setting"><label for="playground-speed">Speed <output for="playground-speed" data-speed-output>1.00×</output></label><input id="playground-speed" type="range" min="0.25" max="3" step="0.25" value="1" aria-valuetext="1 times speed" /></div>
+          </div>
+        </div>
+        <div class="playground-stage">
+          <span class="preview-caption" data-preview-caption>Orbit / 64px</span>
+          <div class="indicator-stage"><loading-indicator animation="orbit" size="64" speed="1" aria-label="Orbit loading animation"></loading-indicator></div>
+          <button class="toggle-animation" type="button" aria-label="Pause animation" aria-pressed="false"><svg class="pause-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12"/></svg><svg class="play-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 10 7-10 7Z"/></svg></button>
+          <p class="motion-preference">Reduced motion is on. Your preview stays still.</p>
+        </div>
+      </div>
+      <p class="copy-feedback" role="status" aria-live="polite"></p>
+      <noscript><p><a href="./indicator.js" download>Download indicator.js</a> to use the HTML component. Enable JavaScript for installation examples and the playground.</p></noscript>
+    </section>
   </main>
 
   <footer class="site-footer page-width">
@@ -65,20 +117,21 @@
         class="specimen-frame"
         title=""
         loading="eager"
-        allow="fullscreen"
         tabindex="-1"
         aria-hidden="true"
         inert
-        srcdoc="<style>html,body{min-height:100%;margin:0;background:#0d0d0e}</style>"
+        srcdoc="<style>html,body{min-height:100%;margin:0;background:black}</style>"
       ></iframe>
-      <button class="tile-link" type="button">
+      <a class="tile-link" href="./specimens/">
+        <span class="tile-name"></span>
         <span class="tile-action" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </span>
-      </button>
+      </a>
     </article>
   </template>
 
   <script defer src="./app.js"></script>
+  <script type="module" src="./playground.js"></script>
 </body>
 </html>

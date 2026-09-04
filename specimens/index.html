@@ -15,7 +15,9 @@
       root.dataset.theme = theme;
       root.dataset.gallery = params.get("gallery") || "public";
       if (params.get("embedded") === "true") root.dataset.embedded = "true";
-      if (params.get("immersive") === "true") root.dataset.immersive = "true";
+      const isDetail = params.get("detail") === "true";
+      if (params.get("immersive") === "true" || isDetail) root.dataset.immersive = "true";
+      if (isDetail) root.dataset.detail = "true";
       if (params.get("motion") === "reduce") root.dataset.motion = "reduce";
       document.querySelector('meta[name="theme-color"]')?.setAttribute(
         "content",
@@ -23,11 +25,18 @@
       );
     })();
   </script>
-  <style>html{background:#fafafb}html[data-theme="dark"]{background:#17181a}</style>
+  <style>
+    html{background:#fafafb}
+    html[data-theme="dark"]{background:#17181a}
+    html[data-detail="true"]{background:#eef2f7}
+    html[data-detail="true"][data-theme="dark"]{background:#07101d}
+    html[data-detail="true"]:not([data-detail-ready="true"]) body{visibility:hidden}
+  </style>
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./showcase-scene.css" />
+  <link rel="stylesheet" href="./fresh-loaders.css" />
   <link rel="stylesheet" href="./preview.css" />
-  <link rel="stylesheet" href="../assets/fonts/gentium-plus.css" />
+  <link rel="stylesheet" href="../assets/fonts/plus-jakarta-sans.css" />
 </head>
 <body>
   <a class="detail-back" href="../" aria-label="Back to Loading collection"><span aria-hidden="true">←</span> Loading</a>

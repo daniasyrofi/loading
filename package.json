@@ -1,15 +1,28 @@
 {
-  "name": "loading-showcase",
-  "version": "0.1.0",
-  "private": true,
-  "description": "A curated showcase of loading states, progress patterns, and motion experiments.",
+  "name": "@dani/loading",
+  "version": "1.0.0",
+  "description": "Curated loading-state design library for discovering, understanding, customizing, and shipping better loading experiences.",
   "type": "module",
-  "scripts": {
-    "dev": "node dev-server.mjs",
-    "start": "node dev-server.mjs",
-    "check": "node --check app.js && node --check specimens/app.js"
-  },
   "author": "Dani Asyrofi",
-  "license": "MIT"
+  "license": "MIT",
+  "bin": {
+    "loading": "./bin/cli.mjs",
+    "@dani/loading": "./bin/cli.mjs"
+  },
+  "scripts": {
+    "dev": "serve . -l tcp://127.0.0.1:3000",
+    "start": "serve . -l tcp://127.0.0.1:3000",
+    "validate": "node scripts/validate-specimens.mjs",
+    "benchmark": "node scripts/benchmark-loaders.mjs"
+  },
+  "keywords": [
+    "loading",
+    "motion-design",
+    "loaders",
+    "ai-thinking",
+    "shadcn",
+    "webgl",
+    "canvas2d",
+    "svg-animation"
+  ]
 }
-

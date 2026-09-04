@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#18181c" />
+      <stop offset="100%" stop-color="#09090b" />
+    </radialGradient>
+    <radialGradient id="glowGrad" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)" />
+  <circle cx="600" cy="240" r="380" fill="url(#glowGrad)" />
+
+  <!-- Subtle Blueprint Grid -->
+  <g stroke="rgba(255,255,255,0.03)" stroke-width="1">
+    <line x1="0" y1="100" x2="1200" y2="100" />
+    <line x1="0" y1="200" x2="1200" y2="200" />
+    <line x1="0" y1="300" x2="1200" y2="300" />
+    <line x1="0" y1="400" x2="1200" y2="400" />
+    <line x1="0" y1="500" x2="1200" y2="500" />
+    <line x1="200" y1="0" x2="200" y2="630" />
+    <line x1="400" y1="0" x2="400" y2="630" />
+    <line x1="600" y1="0" x2="600" y2="630" />
+    <line x1="800" y1="0" x2="800" y2="630" />
+    <line x1="1000" y1="0" x2="1000" y2="630" />
+  </g>
+
+  <!-- Brand Eyebrow -->
+  <g transform="translate(100, 110)">
+    <rect width="28" height="28" rx="8" fill="#ffffff" fill-opacity="0.08" stroke="rgba(255,255,255,0.15)" />
+    <circle cx="14" cy="14" r="5" fill="#38bdf8" />
+    <text x="40" y="20" fill="#a1a1aa" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" letter-spacing="0.08em">LOADING.DANIASYROFI.COM</text>
+  </g>
+
+  <!-- Specimen Identity -->
+  <g transform="translate(100, 260)">
+    <rect x="0" y="-36" width="120" height="26" rx="6" fill="#38bdf8" fill-opacity="0.12" stroke="#38bdf8" stroke-opacity="0.3" />
+    <text x="12" y="-19" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="700">SPECIMEN</text>
+
+    <!-- Title -->
+    <text x="0" y="44" fill="#ffffff" font-family="-apple-system, Inter, sans-serif" font-size="52" font-weight="700" letter-spacing="-0.03em">Elastic Dots</text>
+
+    <!-- Tagline -->
+    <text x="0" y="96" fill="#a1a1aa" font-family="-apple-system, Inter, sans-serif" font-size="20" font-weight="400">Fluid kinetic dots with non-linear spring momentum and magnetic ten…</text>
+  </g>
+
+  <!-- Specimen Visual Focus Box -->
+  <g transform="translate(820, 200)">
+    <rect x="0" y="0" width="280" height="260" rx="20" fill="#121215" stroke="rgba(255,255,255,0.12)" />
+    <circle cx="140" cy="130" r="48" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="210 60" />
+    <circle cx="140" cy="130" r="6" fill="#38bdf8" />
+  </g>
+
+  <!-- Footer Meta -->
+  <g transform="translate(100, 540)">
+    <text x="0" y="0" fill="#71717a" font-family="-apple-system, Inter, sans-serif" font-size="15">Curated Design System &amp; Component Registry</text>
+    <text x="680" y="0" fill="#71717a" font-family="monospace" font-size="14">pnpm dlx shadcn@latest add ...</text>
+  </g>
+</svg>

@@ -43,7 +43,7 @@
     0 0 0 1px var(--line),
     0 1px 2px rgb(16 24 40 / 4%),
     0 4px 12px rgb(16 24 40 / 4%);
-  --sans: "Gentium Plus", Georgia, serif;
+  --sans: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
@@ -10225,8 +10225,10 @@ html:root[data-embedded="true"] body #experiment .specimen-actions {
 :root[data-motion="reduce"] .semaphore-indicator .rhythm-motion-unit,
 :root[data-motion="reduce"] .fingerprint-scan-indicator .rhythm-motion-unit { animation: none; }
 
-/* 61–80 · Agent Runtime Indicators. Motion describes real system topology and state. */
-.extended-shape-specimen .rhythm-status__row > [class$="-indicator"] {
+/* 61–80 · Agent Runtime Indicators. Scope the shared SVG slot to its card:
+   the entry specimen also wraps the scene and must not restyle sibling icons. */
+:where(.extended-shape-specimen > .demo-surface) > .recording-subject .rhythm-status__row > [class$="-indicator"],
+.showcase-node:where(.extended-shape-specimen) .rhythm-status__row > [class$="-indicator"] {
   position: relative;
   display: inline-grid;
   width: 42px;
@@ -10235,7 +10237,8 @@ html:root[data-embedded="true"] body #experiment .specimen-actions {
   place-items: center;
 }
 
-.extended-shape-specimen .rhythm-status__row > [class$="-indicator"] > svg {
+:where(.extended-shape-specimen > .demo-surface) > .recording-subject .rhythm-status__row > [class$="-indicator"] > svg,
+.showcase-node:where(.extended-shape-specimen) .rhythm-status__row > [class$="-indicator"] > svg {
   width: 42px;
   height: 26px;
   overflow: visible;

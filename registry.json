@@ -1,0 +1,236 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "@dani/loading",
+  "homepage": "https://loading.daniasyrofi.com",
+  "items": [
+    {
+      "name": "loading",
+      "type": "registry:ui",
+      "title": "Loading",
+      "description": "Seven animated loaders with size, speed and pause controls.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [
+        { "path": "components/loading.tsx", "type": "registry:ui", "target": "components/ui/loading.tsx" },
+        { "path": "indicator.js", "type": "registry:file", "target": "components/ui/loading-indicator.js" },
+        { "path": "components/loading-indicator.d.ts", "type": "registry:file", "target": "components/ui/loading-indicator.d.ts" }
+      ]
+    },
+    {
+      "name": "segment-arc",
+      "type": "registry:ui",
+      "title": "Segment Arc",
+      "description": "High-precision segmented radial loader with harmonic phase shifts.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/essential/segment-arc.tsx", "type": "registry:ui", "target": "components/ui/segment-arc.tsx" }]
+    },
+    {
+      "name": "elastic-dots",
+      "type": "registry:ui",
+      "title": "Elastic Dots",
+      "description": "Fluid kinetic dots with non-linear spring momentum and magnetic tension.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/essential/elastic-dots.tsx", "type": "registry:ui", "target": "components/ui/elastic-dots.tsx" }]
+    },
+    {
+      "name": "border-beam",
+      "type": "registry:ui",
+      "title": "Border Beam",
+      "description": "High-precision laser trace beam traveling along component perimeters.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/essential/border-beam.tsx", "type": "registry:ui", "target": "components/ui/border-beam.tsx" }]
+    },
+    {
+      "name": "skeleton-wave",
+      "type": "registry:ui",
+      "title": "Skeleton Wave",
+      "description": "High-performance wireframe placeholder with smooth luminance sweep.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/essential/skeleton-wave.tsx", "type": "registry:ui", "target": "components/ui/skeleton-wave.tsx" }]
+    },
+    {
+      "name": "orbit-ring",
+      "type": "registry:ui",
+      "title": "Orbit Ring",
+      "description": "Concentric dual-orbit rings with counter-rotational harmonic phase shifts.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/essential/orbit-ring.tsx", "type": "registry:ui", "target": "components/ui/orbit-ring.tsx" }]
+    },
+    {
+      "name": "progress-sweep",
+      "type": "registry:ui",
+      "title": "Progress Sweep",
+      "description": "High-precision horizontal progress track with accelerated laser head.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/essential/progress-sweep.tsx", "type": "registry:ui", "target": "components/ui/progress-sweep.tsx" }]
+    },
+    {
+      "name": "neural-orbit",
+      "type": "registry:ui",
+      "title": "Neural Orbit",
+      "description": "State-reactive particle orbital indicator for AI agent workflows.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/ai-agent/neural-orbit.tsx", "type": "registry:ui", "target": "components/ui/neural-orbit.tsx" }]
+    },
+    {
+      "name": "agent-pulse",
+      "type": "registry:ui",
+      "title": "Agent Pulse",
+      "description": "Harmonic multi-layer waveform with volumetric bloom for voice & AI synthesis.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/ai-agent/agent-pulse.tsx", "type": "registry:ui", "target": "components/ui/agent-pulse.tsx" }]
+    },
+    {
+      "name": "token-flow",
+      "type": "registry:ui",
+      "title": "Token Flow",
+      "description": "High-density streaming token emitter simulating vector space synthesis.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/ai-agent/token-flow.tsx", "type": "registry:ui", "target": "components/ui/token-flow.tsx" }]
+    },
+    {
+      "name": "reasoning-glyph",
+      "type": "registry:ui",
+      "title": "Reasoning Glyph",
+      "description": "Geometric latent-space morphing polygon for extended thinking models.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/ai-agent/reasoning-glyph.tsx", "type": "registry:ui", "target": "components/ui/reasoning-glyph.tsx" }]
+    },
+    {
+      "name": "search-field",
+      "type": "registry:ui",
+      "title": "Search Field",
+      "description": "Vector embedding semantic retrieval radar with active match blips.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/ai-agent/search-field.tsx", "type": "registry:ui", "target": "components/ui/search-field.tsx" }]
+    },
+    {
+      "name": "latent-cluster",
+      "type": "registry:ui",
+      "title": "Latent Cluster",
+      "description": "Dynamic vector graph constellation expanding and contracting during synthesis.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/ai-agent/latent-cluster.tsx", "type": "registry:ui", "target": "components/ui/latent-cluster.tsx" }]
+    },
+    {
+      "name": "particle-weave",
+      "type": "registry:ui",
+      "title": "Particle Weave",
+      "description": "Double-helix kinetic particle ribbons with harmonic depth interleaving.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/expressive/particle-weave.tsx", "type": "registry:ui", "target": "components/ui/particle-weave.tsx" }]
+    },
+    {
+      "name": "magnetic-field",
+      "type": "registry:ui",
+      "title": "Magnetic Field",
+      "description": "Kinetic dipole flux simulation with magnetic particle stream attraction.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/expressive/magnetic-field.tsx", "type": "registry:ui", "target": "components/ui/magnetic-field.tsx" }]
+    },
+    {
+      "name": "metaball-fusion",
+      "type": "registry:ui",
+      "title": "Metaball Fusion",
+      "description": "Fluid organic liquid drops merging and dividing with surface tension physics.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/expressive/metaball-fusion.tsx", "type": "registry:ui", "target": "components/ui/metaball-fusion.tsx" }]
+    },
+    {
+      "name": "signal-radar",
+      "type": "registry:ui",
+      "title": "Signal Radar",
+      "description": "High-precision concentric telemetry radar with outward sonar pulses.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/expressive/signal-radar.tsx", "type": "registry:ui", "target": "components/ui/signal-radar.tsx" }]
+    },
+    {
+      "name": "newton-cradle",
+      "type": "registry:ui",
+      "title": "Newton Cradle",
+      "description": "Physical momentum conservation cradle with elastic collision timing.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/expressive/newton-cradle.tsx", "type": "registry:ui", "target": "components/ui/newton-cradle.tsx" }]
+    },
+    {
+      "name": "commit-frontier",
+      "type": "registry:ui",
+      "title": "Commit Frontier",
+      "description": "Provisional stream verification with direct structural handoff into final UI.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/experiences/commit-frontier.tsx", "type": "registry:ui", "target": "components/ui/commit-frontier.tsx" }]
+    },
+    {
+      "name": "scaffold-release",
+      "type": "registry:ui",
+      "title": "Scaffold Release",
+      "description": "Asynchronous DOM layout scaffolding dissolving seamlessly into hydrated components.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/experiences/scaffold-release.tsx", "type": "registry:ui", "target": "components/ui/scaffold-release.tsx" }]
+    },
+    {
+      "name": "speculative-race",
+      "type": "registry:ui",
+      "title": "Speculative Race",
+      "description": "Parallel speculative route racing collapsing into the fastest resolved endpoint.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/experiences/speculative-race.tsx", "type": "registry:ui", "target": "components/ui/speculative-race.tsx" }]
+    },
+    {
+      "name": "mercury-surface",
+      "type": "registry:ui",
+      "title": "Mercury Surface",
+      "description": "Liquid chrome metallic fluid simulation powered by isolated WebGL shaders.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/experimental/mercury-surface.tsx", "type": "registry:ui", "target": "components/ui/mercury-surface.tsx" }]
+    },
+    {
+      "name": "iridescent-glass",
+      "type": "registry:ui",
+      "title": "Iridescent Glass",
+      "description": "Refractive optical glass sphere with chromatic dispersion and dynamic caustics.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/experimental/iridescent-glass.tsx", "type": "registry:ui", "target": "components/ui/iridescent-glass.tsx" }]
+    },
+    {
+      "name": "plasma-field",
+      "type": "registry:ui",
+      "title": "Plasma Field",
+      "description": "Volumetric iridescent plasma vortex powered by isolated WebGL fragment shaders.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/experimental/plasma-field.tsx", "type": "registry:ui", "target": "components/ui/plasma-field.tsx" }]
+    },
+    {
+      "name": "refraction-matrix",
+      "type": "registry:ui",
+      "title": "Refraction Matrix",
+      "description": "3D isometric glass cube lattice refracting dynamic underlying data beams.",
+      "dependencies": [],
+      "devDependencies": [],
+      "files": [{ "path": "loaders/experimental/refraction-matrix.tsx", "type": "registry:ui", "target": "components/ui/refraction-matrix.tsx" }]
+    }
+  ]
+}

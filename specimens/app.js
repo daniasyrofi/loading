@@ -1,6 +1,7 @@
 import * as THREE from "./vendor/three.module.min.js";
 import { createShowcaseScene } from "./showcase-scene.js";
 import { createTimerRuntime } from "./timer-runtime.js";
+import { createFreshLoadingDefinitions } from "./fresh-loaders.js";
 
 const VARIANTS = Object.freeze({
   drive: {
@@ -5641,7 +5642,7 @@ function DepthAssembly({ paused = false } = {}) {
 
 const COMPACT_LOADING_STATES = ["braiding", "crystallizing", "earth", "fire", "water", "air", "lightning", "metal", "wood", "light", "wind", "crystal", "focusing", "inscribing", "resolving"];
 
-function CompactLoadingFamily({ state = "braiding", paused = false } = {}) {
+function CompactLoadingFamily({ state = "braiding", paused = false, initialElapsed = 0 } = {}) {
   const root = createElement("div", "compact-loading-family");
   root.dataset.lifecycleSource = "deterministic-simulation";
   root.dataset.phase = "entry";
@@ -7097,7 +7098,7 @@ function CompactLoadingFamily({ state = "braiding", paused = false } = {}) {
   }
 
   const label = createElement("span", "compact-loading-family__label");
-  const timer = ElapsedTimer({ paused });
+  const timer = ElapsedTimer({ initialElapsed, paused });
   timer.root.classList.add("compact-loading-family__time");
   timer.root.setAttribute("aria-label", "Elapsed time");
   root.append(mark, label, timer.root);
@@ -7129,7 +7130,6 @@ function CompactLoadingFamily({ state = "braiding", paused = false } = {}) {
     clearTimers();
     if (isDestroyed || isSuspended()) return;
     root.dataset.phase = "entry";
-    timer.reset(0);
     timer.setPaused(false);
     const isElementState = ["crystallizing", "earth", "fire", "water", "air", "lightning", "metal", "wood", "light", "wind", "crystal"].includes(currentState);
     if (isReducedMotion()) {
@@ -10678,8 +10678,11 @@ const RECORDING_GENERATIVE_PATTERNS = new Map([
   ["frost", 56],
   ["echo-halo", 57],
   ["pixel-tide", 58],
-  ["signal-bloom", 59],
-  ["reasoning-circuit", 60]
+  ["neural-current", 59],
+  ["reasoning-circuit", 60],
+  ["contour-drift", 61],
+  ["veil", 64],
+  ["particle-cascade", 65]
 ]);
 
 /* Point-field patterns: ~12k particles, each one solving its own position from
@@ -11515,6 +11518,10 @@ const RECORDING_BACKDROP_FRAGMENT_SHADER = `
     return mix(paper, shade, ink * tone01);
   }
 
+  vec3 quietDitherPlate(float value, out float tone) {
+    return ditherPlate(value, 0.78, tone);
+  }
+
   /* 13 · Dither — a volumetric field read out one cell at a time. */
   vec3 renderDither(vec2 p, float safeZone) {
     float value = warpField(p * 0.78, uTime);
@@ -11593,25 +11600,76 @@ const RECORDING_BACKDROP_FRAGMENT_SHADER = `
     return ditherPlate(value, 0.96, tone);
   }
 
-  /* Signal Bloom — a six-lobed carrier held outside the safe zone. The small
-     phase offset keeps the bloom alive without making the centre spin. */
-  vec3 renderSignalBloom(vec2 p, float safeZone) {
-    vec2 turned = spin(uTime * 0.024) * p;
-    float reach = length(turned);
-    float angle = atan(turned.y, turned.x);
-    float distortion = warpField(turned * 1.90 + vec2(9.3, 4.1), uTime * 0.44);
-    float lobes = 0.5 + 0.5 * cos(angle * 6.0 - uTime * 0.18 + distortion * 1.8);
-    float bloomRadius = 0.37 + lobes * 0.135 + (distortion - 0.5) * 0.055;
-    float petal = exp(-pow((reach - bloomRadius) / 0.072, 2.0));
-    float echo = exp(-pow((reach - bloomRadius - 0.145) / 0.055, 2.0)) * 0.44;
-    float spark = pow(0.5 + 0.5 * sin(angle * 18.0 + reach * 24.0 - uTime * 0.32), 7.0);
-    float envelope = smoothstep(0.24, 0.34, reach)
-      * (1.0 - smoothstep(0.90, 1.16, reach));
-    float value = clamp((petal + echo + spark * petal * 0.30) * envelope, 0.0, 1.0);
-    value *= mix(safeZone, 1.0, 0.24);
+  /* Neural Current — branching impulses travel through a broken neural halo. */
+  vec3 renderNeuralCurrent(vec2 p, float safeZone) {
+    vec2 q = spin(-uTime * 0.018) * p;
+    float reach = length(q);
+    float angle = atan(q.y, q.x);
+    float branch = sin(angle * 7.0 + uTime * 0.13) * 0.020
+      + sin(angle * 13.0 - uTime * 0.09) * 0.009;
+    float ring = exp(-pow((reach - 0.435 - branch) / 0.036, 2.0));
+    float broken = 0.35 + 0.65 * smoothstep(-0.16, 0.62,
+      sin(angle * 5.0 - uTime * 0.14));
+    float nodes = pow(0.5 + 0.5 * cos(angle * 11.0 + uTime * 0.16), 14.0) * ring;
+    float pulseAngle = uTime * 0.22;
+    vec2 pulseSeat = vec2(cos(pulseAngle), sin(pulseAngle)) * 0.435;
+    float pulse = exp(-pow(length(q - pulseSeat) / 0.042, 2.0));
+    float echo = exp(-pow((reach - 0.535) / 0.024, 2.0)) * 0.20;
+    float envelope = smoothstep(0.30, 0.37, reach)
+      * (1.0 - smoothstep(0.64, 0.78, reach));
+    float value = (ring * broken * 0.78 + nodes * 0.56 + pulse + echo) * envelope;
+    value *= mix(safeZone, 1.0, 0.20);
 
     float tone;
-    return ditherPlate(value, 1.0, tone);
+    return quietDitherPlate(clamp(value, 0.0, 1.0), tone);
+  }
+
+  /* Five more plates share the fixed dither grid and palette. Only their
+     continuous density fields move, keeping the pixels crisp at every speed. */
+  vec3 renderContourDrift(vec2 p, float safeZone) {
+    vec2 q = spin(-0.24) * p;
+    float terrain = fbm(q * 2.8 + vec2(uTime * 0.016, -uTime * 0.012));
+    float height = terrain * 2.0 + q.y * 0.65
+      + sin(q.x * 3.2 + uTime * 0.08) * 0.18;
+    float contour = pow(0.5 + 0.5 * cos(height * 34.0 - uTime * 0.24), 9.0);
+    float shelf = smoothstep(0.42, 0.78, terrain) * 0.18;
+    float value = (contour * 0.82 + shelf) * mix(safeZone, 1.0, 0.12);
+    float tone;
+    return ditherPlate(clamp(value, 0.0, 1.0), 1.0, tone);
+  }
+
+  vec3 renderVeil(vec2 p, float safeZone) {
+    float sway = sin(p.y * 4.2 + uTime * 0.12) * 0.085
+      + sin(p.y * 7.3 - uTime * 0.08) * 0.035;
+    float pleat = 0.5 + 0.5 * sin((p.x + sway) * 20.0 + uTime * 0.17);
+    float weave = 0.5 + 0.5 * sin(p.y * 5.4 + p.x * 3.2 - uTime * 0.11);
+    float edge = smoothstep(0.06, 0.47, abs(p.x));
+    float value = (pow(pleat, 3.2) * 0.77 + weave * 0.16) * edge;
+    value *= mix(0.58, 1.0, safeZone);
+    float tone;
+    return ditherPlate(clamp(value, 0.0, 1.0), 1.0, tone);
+  }
+
+  /* Particle Cascade — broken wavefronts move outward through one compact halo. */
+  vec3 renderParticleCascade(vec2 p, float safeZone) {
+    vec2 q = spin(uTime * 0.012) * p;
+    float reach = length(q);
+    float angle = atan(q.y, q.x);
+    float phase = reach * 46.0 - uTime * 0.68;
+    float fronts = pow(0.5 + 0.5 * cos(phase), 10.0);
+    float broken = 0.40 + 0.60 * pow(0.5 + 0.5
+      * sin(angle * 8.0 + reach * 13.0 - uTime * 0.18), 5.0);
+    float envelope = smoothstep(0.315, 0.365, reach)
+      * (1.0 - smoothstep(0.635, 0.745, reach));
+    float carrier = exp(-pow((reach - 0.455) / 0.145, 2.0));
+    float sparkAngle = -uTime * 0.24;
+    vec2 sparkSeat = vec2(cos(sparkAngle), sin(sparkAngle))
+      * (0.455 + sin(uTime * 0.30) * 0.055);
+    float spark = exp(-pow(length(q - sparkSeat) / 0.040, 2.0));
+    float value = (fronts * broken * 0.82 + spark) * carrier * envelope;
+    value *= mix(safeZone, 1.0, 0.18);
+    float tone;
+    return quietDitherPlate(clamp(value, 0.0, 1.0), tone);
   }
 
   float segDist(vec2 p, vec2 a, vec2 b) {
@@ -12590,8 +12648,11 @@ const RECORDING_BACKDROP_FRAGMENT_SHADER = `
     else if (uMode < 56.5) color = renderFrostPlate(p, safeZone);
     else if (uMode < 57.5) color = renderEchoHalo(p, safeZone);
     else if (uMode < 58.5) color = renderPixelTide(p, safeZone);
-    else if (uMode < 59.5) color = renderSignalBloom(p, safeZone);
-    else color = renderReasoningCircuit(p, safeZone);
+    else if (uMode < 59.5) color = renderNeuralCurrent(p, safeZone);
+    else if (uMode < 60.5) color = renderReasoningCircuit(p, safeZone);
+    else if (uMode < 61.5) color = renderContourDrift(p, safeZone);
+    else if (uMode < 64.5) color = renderVeil(p, safeZone);
+    else color = renderParticleCascade(p, safeZone);
 
     float vignette = smoothstep(0.45, 1.10, length(p * vec2(0.64, 0.98)));
     /* the dither plates are flat paper; a vignette on them reads as dirt */
@@ -14488,6 +14549,20 @@ function wakeRecordingChrome(surface) {
   }, 2400);
 }
 
+function closeEmbeddedDetail() {
+  try {
+    if (typeof window.parent.__closeLoadingDetail === "function") {
+      window.parent.__closeLoadingDetail();
+      return;
+    }
+  } catch {}
+  window.parent.postMessage({ type: "experiment:exit-fullscreen" }, "*");
+}
+
+function returnToCollection() {
+  window.location.href = requestedReturn === "draft" ? "../draft/" : "../";
+}
+
 function leaveRecordingMode({ restoreTheme = true } = {}) {
   const surface = activeRecordingSurface;
   if (!surface) return;
@@ -14538,7 +14613,7 @@ async function enterRecordingMode(surface) {
   surface.querySelector('[data-recording-dropdown="theme"]')?.setRecordingValue(recordingThemeBefore);
   wakeRecordingChrome(surface);
   syncRecordingBackdropRenderer(surface);
-  if (requestedEmbedded) {
+  if (requestedEmbedded || requestedDetail) {
     surface.classList.add("is-recording-fallback");
     document.body.classList.add("has-recording-fallback");
   } else try {
@@ -14702,7 +14777,10 @@ const RECORDING_PATTERN_ARCHIVE = [
     ["reasoning-circuit", "Reasoning Circuit"],
     ["echo-halo", "Echo Halo"],
     ["pixel-tide", "Pixel Tide"],
-    ["signal-bloom", "Signal Bloom"],
+    ["neural-current", "Neural Current"],
+    ["contour-drift", "Contour Drift"],
+    ["veil", "Veil"],
+    ["particle-cascade", "Particle Cascade"],
     ["sunflowers", "Sunflowers"],
     ["sakura", "Sakura"],
     ["daysky", "Blue Sky"]
@@ -14756,7 +14834,10 @@ const RECORDING_PATTERN_GROUPS = [["Fullscreen background", [
   ["corona", "Corona"],
   ["echo-halo", "Echo Halo"],
   ["pixel-tide", "Pixel Tide"],
-  ["signal-bloom", "Signal Bloom"]
+  ["neural-current", "Neural Current"],
+  ["contour-drift", "Contour Drift"],
+  ["veil", "Veil"],
+  ["particle-cascade", "Particle Cascade"]
 ]]];
 
 let recordingDropdownId = 0;
@@ -14943,7 +15024,7 @@ function createRecordingToolbar({ surface, title }) {
 
   const exitButton = createElement("button", "recording-exit");
   exitButton.type = "button";
-  exitButton.setAttribute("aria-label", "Close fullscreen");
+  exitButton.setAttribute("aria-label", "Close detail");
   exitButton.innerHTML = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M6 6l12 12M18 6 6 18"></path>
@@ -14954,7 +15035,9 @@ function createRecordingToolbar({ surface, title }) {
       await new Promise((resolve) => window.setTimeout(resolve, 110));
     }
     if (requestedEmbedded) {
-      window.parent.postMessage({ type: "experiment:exit-fullscreen" }, "*");
+      closeEmbeddedDetail();
+    } else if (requestedDetail) {
+      returnToCollection();
     } else if (document.fullscreenElement) await document.exitFullscreen();
     else leaveRecordingMode();
   });
@@ -14973,7 +15056,10 @@ document.addEventListener("fullscreenchange", () => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && activeRecordingSurface?.classList.contains("is-recording-fallback")) {
-    leaveRecordingMode();
+    event.preventDefault();
+    if (requestedEmbedded) closeEmbeddedDetail();
+    else if (requestedDetail) returnToCollection();
+    else leaveRecordingMode();
   }
 });
 
@@ -15057,7 +15143,8 @@ function createShowcaseControl(className, label, icon) {
 function installShowcaseChrome({ root, item, catalog }) {
   const surface = root.querySelector(".demo-surface");
   if (!surface || !item) return;
-  const ordered = catalog.experiments.filter((entry) => PUBLIC_SHOWCASE_SPECIMEN_IDS.has(entry.id));
+  const showcaseIds = requestedGallery === "draft" ? DRAFT_SHOWCASE_SPECIMEN_IDS : PUBLIC_SHOWCASE_SPECIMEN_IDS;
+  const ordered = catalog.experiments.filter((entry) => showcaseIds.has(entry.id));
   let currentIndex = ordered.findIndex((entry) => entry.id === item.id);
   if (currentIndex < 0 || ordered.length < 2) return;
   root.classList.add("is-showcase-detail");
@@ -15133,9 +15220,11 @@ function installShowcaseChrome({ root, item, catalog }) {
       entry, card,
       variantCount: variants.length,
       createInstance({ variantIndex, elapsed }) {
-        const variant = variants[variantIndex] || definition?.initialVariant;
+        const variant = entry.id === "85"
+          ? "charging"
+          : variants[variantIndex] || definition?.initialVariant;
         const component = entry.id === "148"
-          ? CompactLoadingFamily({ state: "crystallizing", paused: true })
+          ? CompactLoadingFamily({ state: "crystallizing", initialElapsed: elapsed, paused: true })
           : factory({ ...(definition ? { label: definition.label } : {}),
             ...(variant ? { variant } : {}), initialElapsed: elapsed, paused: true });
         const subject = createElement("div", "recording-subject");
@@ -15536,6 +15625,8 @@ const requestedCountDuration = Number(experimentParams.get("countDuration") || 3
 const requestedCopyFailure = experimentParams.get("copyFailure") === "true";
 const requestedEmbedded = experimentParams.get("embedded") === "true";
 const requestedImmersive = experimentParams.get("immersive") === "true";
+const requestedDetail = experimentParams.get("detail") === "true";
+const requestedReturn = experimentParams.get("return") || "public";
 const requestedGallery = experimentParams.get("gallery") || "";
 const requestedPattern = experimentParams.get("pattern") || "";
 const requestedSpeed = experimentParams.get("speed") || "";
@@ -15549,13 +15640,20 @@ const requestedRecordingSpeed = requestedGallery === "draft" && availableRecordi
   ? requestedSpeed
   : "";
 document.documentElement.dataset.gallery = requestedGallery || "public";
-if (requestedImmersive) document.documentElement.dataset.immersive = "true";
+if (requestedImmersive || requestedDetail) document.documentElement.dataset.immersive = "true";
 const requestedSpecimen = experimentParams.get("specimen")?.padStart(2, "0") ?? null;
 const requestedDisplay = experimentParams.get("display")?.padStart(2, "0") ?? null;
 const requestedDraftKey = experimentParams.get("draft") ?? "";
 const PUBLIC_SHOWCASE_SPECIMEN_IDS = new Set([
   "02", "05", "06", "18", "20", "23", "26", "29", "34", "47", "49", "51",
-  "56", "60", "64", "70", "75", "76", "79", "85", "148", "213", "284"
+  "56", "60", "64", "70", "75", "76", "79", "85", "148", "213", "284", "299"
+]);
+const DRAFT_SHOWCASE_SPECIMEN_IDS = new Set([
+  "297", "298", "300", "301", "302", "303", "304", "305", "306", "307",
+  "308", "309", "310", "311", "312", "313", "314", "315", "316", "317",
+  "318", "319", "320", "321", "322", "323", "324", "325", "326", "327",
+  "328", "329", "330", "331", "332", "333", "334", "335", "336", "337",
+  "338", "339"
 ]);
 const DRAFT_ACCESS_HASH = "cd8dc42c37c946e172c7606749f4aa847cc45e6ade0685e6ebf78817d35add98";
 
@@ -16796,6 +16894,7 @@ const balanceBeam = BalanceBeam({ label: "Balancing", variant: "balance", paused
 const balanceBeamSpecimen = SpecimenSection({ index: "60", title: "Balance Beam", description: "Two suspended pans move around one quiet point of balance.", children: balanceBeam.root, controls: null, className: "balance-beam-specimen compact-rhythm-specimen", sourceCodeActions: { title: "BalanceBeam", source: BALANCE_BEAM_SOURCE } });
 
 const extendedShapeDefinitions = [
+  ...createFreshLoadingDefinitions(CompactShapeStatus),
   { index: "61", title: "Piston Crank", description: "A slider-crank: rotation goes in one side and straight-line motion comes out the other.", componentClass: "piston-crank", label: "Driving", initialVariant: "stroke", variants: PISTON_CRANK_VARIANTS, factory: PistonCrank, source: PISTON_CRANK_SOURCE },
   { index: "62", title: "Jellyfish", description: "Jet propulsion: the bell squeezes, the animal rises, and the tentacles always arrive late.", componentClass: "jellyfish", label: "Drifting", initialVariant: "pulse", variants: JELLYFISH_VARIANTS, factory: Jellyfish, source: JELLYFISH_SOURCE },
   { index: "63", title: "Vortex", description: "Every mote spirals in toward the core and is reborn at the rim, so the draw never stops.", componentClass: "vortex", label: "Drawing in", initialVariant: "draw", variants: VORTEX_VARIANTS, factory: Vortex, source: VORTEX_SOURCE },
@@ -17221,10 +17320,11 @@ if (!visibleRoots.length) {
     installShowcaseChrome({ root: visibleRoots[0], item: requestedCatalogItem, catalog });
   }
   document.querySelector("#experiment")?.append(...visibleRoots);
-  if (requestedImmersive && visibleRoots[0]) {
+  if ((requestedImmersive || requestedDetail) && visibleRoots[0]) {
     enterRecordingMode(visibleRoots[0].querySelector(".demo-surface"));
   }
 }
+if (requestedDetail) document.documentElement.dataset.detailReady = "true";
 window.addEventListener("pagehide", () => {
   loadingState.destroy();
   signalRelay.destroy();

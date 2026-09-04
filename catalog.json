@@ -140,184 +140,442 @@
       "order": 23
     },
     {
+      "id": "297",
+      "title": "Prism Shift",
+      "description": "Three fine outlines open, turn, and settle into a small prism.",
+      "order": 24
+    },
+    {
+      "id": "298",
+      "title": "Silk Loop",
+      "description": "A luminous thread flows continuously through a soft infinity loop.",
+      "order": 25
+    },
+    {
+      "id": "299",
+      "title": "Blooming",
+      "description": "Five petals unfurl from a small bud and settle into an open flower.",
+      "order": 24
+    },
+    {
+      "id": "300",
+      "title": "Magnetic Pair",
+      "description": "Two weighted dots draw together, join, and drift apart as they orbit.",
+      "order": 27
+    },
+    {
+      "id": "301",
+      "title": "Arc Relay",
+      "description": "Two fine arcs counter-rotate and trade their length around a steady core.",
+      "order": 28
+    },
+    {
+      "id": "302",
+      "title": "Ribbon Fold",
+      "description": "Three outlined pleats draw together and reopen like a folded ribbon.",
+      "order": 29
+    },
+    {
+      "id": "303",
+      "title": "Droplet Pulse",
+      "description": "Three small drops converge on one basin and release a pair of quiet ripples.",
+      "order": 30
+    },
+    {
+      "id": "304",
+      "title": "Comet Loop",
+      "description": "A single comet rounds an eccentric orbit while a small counterweight holds the composition steady.",
+      "order": 31
+    },
+    {
+      "id": "305",
+      "title": "Pebble Step",
+      "description": "A bright pebble hops across four offset stones while each landing answers with a soft pulse.",
+      "order": 32
+    },
+    {
+      "id": "306",
+      "title": "Cross Weave",
+      "description": "Two threads weave over and under as light travels through them in opposite directions.",
+      "order": 33
+    },
+    {
+      "id": "307",
+      "title": "Fan Fold",
+      "description": "Seven fine ribs open into a fan and trace a light arc before folding closed.",
+      "order": 34
+    },
+    {
+      "id": "308",
+      "title": "Focus Frame",
+      "description": "Four quiet brackets settle around a lens while a short scan circles its edge.",
+      "order": 35
+    },
+    {
+      "id": "309",
+      "title": "Bead Order",
+      "description": "Three differently weighted beads cross paths, then settle from smallest to largest.",
+      "order": 36
+    },
+    {
+      "id": "310",
+      "title": "Wave Crest",
+      "description": "Light fragments drift through three wind contours at independent cadences.",
+      "order": 37
+    },
+    {
+      "id": "311",
+      "title": "Spark Bloom",
+      "description": "A moving glint crosses a faceted stone and leaves two small sparks behind.",
+      "order": 38
+    },
+    {
+      "id": "312",
+      "title": "Capsule Roll",
+      "description": "A marked capsule tumbles across a shallow arc and returns with a soft afterimage.",
+      "order": 39
+    },
+    {
+      "id": "313",
+      "title": "Rail Exchange",
+      "description": "Two packets cross a compact switchyard and exchange lanes without breaking cadence.",
+      "order": 40
+    },
+    {
+      "id": "314",
+      "title": "Parcel Current",
+      "description": "A folded file catches an upward current and wakes the receiving cloud.",
+      "order": 41
+    },
+    {
+      "id": "315",
+      "title": "Download Dock",
+      "description": "A data tile drops through two latches, settles in its dock, and sends a quiet receipt across the base.",
+      "order": 42
+    },
+    {
+      "id": "316",
+      "title": "Save Stitch",
+      "description": "A small shuttle seals a document edge one stitch at a time before the page settles.",
+      "order": 43
+    },
+    {
+      "id": "317",
+      "title": "Socket Pulse",
+      "description": "A plug meets its socket, closes two contacts, and carries one pulse through the joined line.",
+      "order": 44
+    },
+    {
+      "id": "318",
+      "title": "Film Gate",
+      "description": "A film strip advances through a steady gate while the next frame is prepared.",
+      "order": 45
+    },
+    {
+      "id": "319",
+      "title": "Layer Compose",
+      "description": "Three interface layers align into one rendered frame, then release for the next pass.",
+      "order": 46
+    },
+    {
+      "id": "320",
+      "title": "Compile Gate",
+      "description": "Loose primitives pass between closing brackets and resolve into one compact module.",
+      "order": 47
+    },
+    {
+      "id": "321",
+      "title": "Query Stack",
+      "description": "A request enters a compact store, wakes each layer, and returns as one result.",
+      "order": 48
+    },
+    {
+      "id": "322",
+      "title": "Proof Gates",
+      "description": "A proof token passes three checkpoints and wakes each receipt as it clears.",
+      "order": 49
+    },
+    {
+      "id": "323",
+      "title": "Module Crate",
+      "description": "Three modules settle into an open package while its flaps answer each arrival.",
+      "order": 50
+    },
+    {
+      "id": "324",
+      "title": "Asclepius Rise",
+      "description": "A single serpent climbs the staff of Asclepius as a quiet healing signal travels upward.",
+      "order": 51
+    },
+    {
+      "id": "325",
+      "title": "Genome Sequence",
+      "description": "Two genetic strands exchange depth while base pairs resolve in a precise travelling sequence.",
+      "order": 52
+    },
+    {
+      "id": "326",
+      "title": "Cell Repair",
+      "description": "Repair cells converge on a broken membrane, seal its opening, and restart the nucleus pulse.",
+      "order": 53
+    },
+    {
+      "id": "327",
+      "title": "Neural Bridge",
+      "description": "Two neurons extend toward one another, form a synapse, and pass a clean impulse across the gap.",
+      "order": 54
+    },
+    {
+      "id": "328",
+      "title": "Targeted Therapy",
+      "description": "A medicine carrier navigates a vessel, docks at one marked cell, and releases its payload inward.",
+      "order": 55
+    },
+    {
+      "id": "329",
+      "title": "Frame Register",
+      "description": "Three measured poses pull a robot coordinate frame into exact registration with its sensor frame.",
+      "order": 56
+    },
+    {
+      "id": "330",
+      "title": "Visual Servo",
+      "description": "A vision target closes its image-space error until the robot tool settles on the desired pose.",
+      "order": 57
+    },
+    {
+      "id": "331",
+      "title": "Tactile Grip",
+      "description": "Two soft jaws close until tactile contact balances, then hold without crushing the object.",
+      "order": 58
+    },
+    {
+      "id": "332",
+      "title": "Rover Map",
+      "description": "A rover sweeps the terrain with LiDAR, resolves landmarks, and draws the next safe route.",
+      "order": 59
+    },
+    {
+      "id": "333",
+      "title": "Guide & Cut",
+      "description": "A guide samples the DNA sequence, locks beside its target motif, and opens a precise repair site.",
+      "order": 60
+    },
+    {
+      "id": "334",
+      "title": "LNP Release",
+      "description": "A lipid nanoparticle docks with the cell membrane, fuses, and releases its RNA cargo inside.",
+      "order": 61
+    },
+    {
+      "id": "335",
+      "title": "Neural Bypass",
+      "description": "Neural spikes pass through a decoder and reappear as coordinated movement beyond a broken pathway.",
+      "order": 62
+    },
+    {
+      "id": "336",
+      "title": "Atomic Settle",
+      "description": "An asset and its payment lock together, then exchange simultaneously so neither side moves alone.",
+      "order": 63
+    },
+    {
+      "id": "337",
+      "title": "Netting Flow",
+      "description": "Opposing obligations enter together, cancel pair by pair, and leave one smaller amount to settle.",
+      "order": 64
+    },
+    {
+      "id": "338",
+      "title": "FX Bridge",
+      "description": "Two currency pools quote through a shared bridge and exchange value at the same instant.",
+      "order": 65
+    },
+    {
+      "id": "339",
+      "title": "Compound Mix",
+      "description": "Two measured reagents fall into a flask, circulate through the solution, and react into one stable compound.",
+      "order": 66
+    },
+    {
       "id": "78",
       "title": "Spirograph",
       "description": "A small circle rolls inside a large one and its pen keeps redrawing the same closed figure.",
-      "order": 24
+      "order": 51
     },
     {
       "id": "80",
       "title": "Helix Spin",
       "description": "Two strands wind around one axis, each turn carrying the other forward.",
-      "order": 25
+      "order": 52
     },
     {
       "id": "63",
       "title": "Vortex",
       "description": "Every mote spirals in toward the core and is reborn at the rim, so the draw never stops.",
-      "order": 26
+      "order": 53
     },
     {
       "id": "77",
       "title": "Pendulum Wave",
       "description": "Six pendulums with six periods drift out of phase, scatter, and resync exactly once per cycle.",
-      "order": 27
+      "order": 54
     },
     {
       "id": "71",
       "title": "Field Lines",
       "description": "Particles move along a simple magnetic field.",
-      "order": 28
+      "order": 55
     },
     {
       "id": "153",
       "title": "Jitter Buffer",
       "description": "Irregular packet arrivals absorbed into a buffer and released at a constant cadence.",
-      "order": 29
+      "order": 56
     },
     {
       "id": "154",
       "title": "FEC Repair",
       "description": "In-flight forward error correction reconstructs missing cells from redundancy without retransmission.",
-      "order": 30
+      "order": 57
     },
     {
       "id": "155",
       "title": "Backpressure",
       "description": "A downstream bottleneck propagates compression waves backward through queued tokens.",
-      "order": 31
+      "order": 58
     },
     {
       "id": "156",
       "title": "Work Steal",
       "description": "Underloaded worker queues steal tasks horizontally from overloaded neighbors.",
-      "order": 32
+      "order": 59
     },
     {
       "id": "157",
       "title": "Arbiter",
       "description": "Exclusive scheduling where aperture pre-contracts and admits requests in non-trivial order.",
-      "order": 33
+      "order": 60
     },
     {
       "id": "158",
       "title": "Constraint Relaxation",
       "description": "Connected graph nodes resolve continuous strain through damped spring relaxation.",
-      "order": 34
+      "order": 61
     },
     {
       "id": "159",
       "title": "Phase Lock",
       "description": "Three coupled oscillators pull each other into phase synchrony before experiencing a phase slip.",
-      "order": 35
+      "order": 62
     },
     {
       "id": "160",
       "title": "Coalescer",
       "description": "Temporally clustered events consolidate into single output pulses while isolated events pass directly.",
-      "order": 36
+      "order": 63
     },
     {
       "id": "161",
       "title": "Interleave",
       "description": "Streams resequence through crossing paths with physical depth occlusion before reconstruction.",
-      "order": 37
+      "order": 64
     },
     {
       "id": "162",
       "title": "Window Credit",
       "description": "Bidirectional capacity flow where forward data narrows receiver window and return credits unlock transmission.",
-      "order": 38
+      "order": 65
     },
     {
       "id": "163",
       "title": "ZMP Stabilizer",
       "description": "Ground reaction force and center of pressure shift to capture divergent motion in bipedal balance.",
-      "order": 39
+      "order": 66
     },
     {
       "id": "164",
       "title": "Tendon Antagonist",
       "description": "Antagonistic flexor and extensor cable tendons equilibrate compliance in a dexterous joint.",
-      "order": 40
+      "order": 67
     },
     {
       "id": "165",
       "title": "Tactile Array",
       "description": "Elastomeric tactile skin tracks normal indentation and tangential shear vectors before slip occurs.",
-      "order": 41
+      "order": 68
     },
     {
       "id": "166",
       "title": "Series Elastic Actuator",
       "description": "Torsional spring deflection between motor rotor and link arm measures torque and damps impact.",
-      "order": 42
+      "order": 69
     },
     {
       "id": "167",
       "title": "IK Jacobian",
       "description": "Inverse kinematics damped least-squares solver smoothly guides tooltip through workspace constraints.",
-      "order": 43
+      "order": 70
     },
     {
       "id": "168",
       "title": "Canopy LiDAR",
       "description": "Stratified laser waveform echoes resolve vertical crown density and biomass flux.",
-      "order": 44
+      "order": 71
     },
     {
       "id": "169",
       "title": "Merkle Proof",
       "description": "Heterogeneous telemetry leaves combine through cryptographic hash pairs into a verifiable root attestation.",
-      "order": 45
+      "order": 72
     },
     {
       "id": "170",
       "title": "Sorbent Swing",
       "description": "Twin adsorption chambers alternate ambient carbon capture and vacuum thermal desorption.",
-      "order": 46
+      "order": 73
     },
     {
       "id": "171",
       "title": "Mineral Front",
       "description": "Dissolved carbon percolates through basalt fractures to nucleate solid calcite crystals.",
-      "order": 47
+      "order": 74
     },
     {
       "id": "172",
       "title": "Flux Tower",
       "description": "High-frequency 3D wind velocity and carbon gas concentration sample in synchrony to compute negative flux sinks.",
-      "order": 48
+      "order": 75
     },
     {
       "id": "173",
       "title": "Humanoid Walk",
       "description": "A familiar biped silhouette alternates arms and legs through a compact, balanced gait cycle.",
-      "order": 49
+      "order": 76
     },
     {
       "id": "174",
       "title": "Robot Grasp",
       "description": "A parallel-jaw robotic gripper aligns, closes around one object, and lifts it.",
-      "order": 50
+      "order": 77
     },
     {
       "id": "175",
       "title": "Carbon Capture",
       "description": "Air particles pass through a filter and consolidate into one captured carbon cell.",
-      "order": 51
+      "order": 78
     },
     {
       "id": "176",
       "title": "Carbon Credit",
       "description": "A project issues one carbon token, verification checks it, and the registry retires it.",
-      "order": 52
+      "order": 79
     },
     {
       "id": "177",
       "title": "Humanoid Vision",
       "description": "A familiar robot face scans, focuses, and tracks a target with its eyes.",
-      "order": 53
+      "order": 80
     }
   ]
 }

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-collection="draft">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <title>Loading Drafts</title>
+  <meta name="description" content="Loading animation studies still in progress." />
+  <link rel="preload" href="../assets/fonts/gentium-plus-latin-regular.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="../assets/fonts/gentium-plus.css" />
+  <link rel="preload" href="../assets/fonts/plus-jakarta-sans-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="../assets/fonts/plus-jakarta-sans.css" />
+  <link rel="icon" type="image/svg+xml" sizes="any" href="../assets/favicon.svg?v=2" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="shooting-sky" data-shooting-sky aria-hidden="true">
+    <span class="shooting-star"></span>
+    <span class="shooting-star"></span>
+  </div>
+
+  <header class="site-header page-width" aria-label="Draft navigation">
+    <a class="back-link" href="../" aria-label="Back to Loading">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.75-5 5.25 5 5.25" /></svg>
+      <span>Loading</span>
+    </a>
+    <nav class="header-actions" aria-label="Project links">
+      <a class="icon-button" href="https://x.com/dani_asyrofi" target="_blank" rel="noopener noreferrer" aria-label="Dani Asyrofi on X">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h3.75l3.96 5.3 4.7-5.3H19l-5.55 6.28L19.5 19.5h-3.74l-4.48-6.08-5.38 6.08H4.3l6.24-7.06L5 4.5Zm2.4 1.2 9 12.6h1.7l-9-12.6H7.4Z" /></svg>
+      </a>
+    </nav>
+  </header>
+
+  <main class="page-width">
+    <section class="intro" aria-labelledby="page-title">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <h1 id="page-title">Drafts</h1>
+      <p>Loading studies still taking shape.</p>
+    </section>
+    <section class="specimen-grid" aria-label="Draft loading collection" data-specimen-grid></section>
+  </main>
+
+  <footer class="site-footer page-width">
+    <p>By <a href="https://x.com/dani_asyrofi" target="_blank" rel="noopener noreferrer">Dani Asyrofi</a></p>
+  </footer>
+
+  <template data-specimen-template>
+    <article class="specimen-tile">
+      <iframe class="specimen-frame" title="" loading="eager" tabindex="-1" aria-hidden="true" inert srcdoc="<style>html,body{min-height:100%;margin:0;background:black}</style>"></iframe>
+      <a class="tile-link" href="../specimens/">
+        <span class="tile-name"></span>
+        <span class="tile-action" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+    </article>
+  </template>
+
+  <script defer src="../app.js"></script>
+</body>
+</html>

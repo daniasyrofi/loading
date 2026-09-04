@@ -9,6 +9,7 @@ own animation clock, independent of camera and mode transitions.
 ## Ownership
 
 - `app.js`: component factories, elapsed timers, variant controls, theme/pattern dropdowns.
+- `fresh-loaders.js` / `fresh-loaders.css`: original SVG motion studies, sharing the status shell and timer lifecycle. Add new studies here instead of promoting draft components.
 - `showcase-scene.js`: persistent card instances, selection, camera, transitions and chunk lifecycle.
 - `showcase-chunks.js`: deterministic, DOM-free staggered layout and nearest-visible-card selection.
 - `showcase-scene.css`: viewport clipping, edge fades and responsive HUD layout. Component appearance remains in `styles.css`.

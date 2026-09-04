@@ -121,7 +121,7 @@ html[data-embedded="true"]:not([data-immersive="true"]) body #experiment :is(
   width: 100%;
   max-width: 100%;
   overflow: hidden;
-  font-family: "Gentium Plus", Georgia, serif;
+  font-family: var(--sans);
   font-size: 16px;
   font-weight: 400;
   letter-spacing: 0;
