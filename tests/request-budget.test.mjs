@@ -27,6 +27,7 @@ test("public live previews prioritize every visible card and recycle offscreen w
   ]);
 
   assert.match(galleryHtml, /class="specimen-poster"/);
+  assert.match(galleryHtml, /app\.js\?v=viewport-live-1/);
   assert.doesNotMatch(galleryHtml, /<script type="module" src="\.\/playground\.js"><\/script>/);
   assert.doesNotMatch(galleryHtml, /href="\.\/playground\.css"/);
   assert.match(gallerySource, /poster\.dataset\.src = `\.\/posters\/specimen-\$\{id\}\.webp`/);
