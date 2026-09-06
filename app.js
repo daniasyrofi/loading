@@ -145,11 +145,12 @@
   if (!grid || !template) return;
 
   let activeFrameLoads = 0;
+  let previewRuntimeWarmed = false;
   const frameQueue = [];
   const queuedFrames = new WeakSet();
   // Visible cards take priority. A small concurrency cap keeps a newly opened
   // page from creating a network burst while the shared cache warms up.
-  const maxConcurrentFrameLoads = supportsIntentPreview ? 3 : 2;
+  const maxSteadyFrameLoads = supportsIntentPreview ? 3 : 2;
   const framePrefetchMargin = supportsIntentPreview ? "160px 0px" : "120px 0px";
   const idleFrameMarkup = "<style>html,body{min-height:100%;margin:0;background:black}</style>";
 
@@ -166,6 +167,26 @@
     const index = frameQueue.indexOf(frame);
     if (index >= 0) frameQueue.splice(index, 1);
     queuedFrames.delete(frame);
+  }
+
+  function compareFramePriority(a, b) {
+    const visibleDifference = Number(b.dataset.visible === "true") - Number(a.dataset.visible === "true");
+    if (visibleDifference) return visibleDifference;
+
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const distanceFromViewport = (frame) => {
+      const rect = frame.getBoundingClientRect();
+      if (rect.bottom < 0) return -rect.bottom;
+      if (rect.top > viewportHeight) return rect.top - viewportHeight;
+      return Math.max(0, rect.top);
+    };
+    const distanceDifference = distanceFromViewport(a) - distanceFromViewport(b);
+    if (distanceDifference) return distanceDifference;
+    return Number(a.dataset.previewOrder) - Number(b.dataset.previewOrder);
+  }
+
+  function sortFrameQueue() {
+    frameQueue.sort(compareFramePriority);
   }
 
   function releaseLiveFrame(frame) {
@@ -207,6 +228,7 @@
     if (frame.dataset.loading === "true") {
       frame.dataset.loading = "false";
       activeFrameLoads = Math.max(0, activeFrameLoads - 1);
+      previewRuntimeWarmed = true;
     }
     if (frame.isConnected && frame.dataset.nearby === "true") {
       frame.dataset.ready = "true";
@@ -233,6 +255,11 @@
   }
 
   function pumpFrameQueue() {
+    // Give the highest visible card an uncontested first load. Once its shared
+    // runtime is warm, use the normal small parallel pool for the remaining
+    // viewport instead of making the first row compete for cold-cache bytes.
+    const maxConcurrentFrameLoads = previewRuntimeWarmed ? maxSteadyFrameLoads : 1;
+    sortFrameQueue();
     while (activeFrameLoads < maxConcurrentFrameLoads && frameQueue.length) {
       const frame = frameQueue.shift();
       if (frame) queuedFrames.delete(frame);
@@ -251,11 +278,13 @@
       || frame.dataset.ready === "true" || frame.dataset.loading === "true") return;
     if (queuedFrames.has(frame)) {
       if (!prioritize) return;
-      removeQueuedFrame(frame);
+      sortFrameQueue();
+      pumpFrameQueue();
+      return;
     }
     queuedFrames.add(frame);
-    if (prioritize) frameQueue.unshift(frame);
-    else frameQueue.push(frame);
+    frameQueue.push(frame);
+    if (prioritize) sortFrameQueue();
     pumpFrameQueue();
   }
 
@@ -319,6 +348,7 @@
 
       frame.title = `${title} live loading preview`;
       frame.dataset.src = previewUrl.href;
+      frame.dataset.previewOrder = String(id);
 
       // Public collection traffic gets a tiny static preview first. Loading
       // the full specimen runtime is reserved for deliberate mouse/keyboard

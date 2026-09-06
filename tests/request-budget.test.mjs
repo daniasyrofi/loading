@@ -27,14 +27,18 @@ test("public live previews prioritize every visible card and recycle offscreen w
   ]);
 
   assert.match(galleryHtml, /class="specimen-poster"/);
-  assert.match(galleryHtml, /app\.js\?v=viewport-live-1/);
+  assert.match(galleryHtml, /app\.js\?v=top-priority-1/);
   assert.doesNotMatch(galleryHtml, /<script type="module" src="\.\/playground\.js"><\/script>/);
   assert.doesNotMatch(galleryHtml, /href="\.\/playground\.css"/);
   assert.match(gallerySource, /poster\.dataset\.src = `\.\/posters\/specimen-\$\{id\}\.webp`/);
   assert.match(gallerySource, /posterObserver\.observe\(poster\)/);
   assert.match(gallerySource, /supportsIntentPreview && !reducedMotion/);
   assert.match(gallerySource, /const autoPreview = isDraftCollection \|\| !reducedMotion/);
-  assert.match(gallerySource, /maxConcurrentFrameLoads = supportsIntentPreview \? 3 : 2/);
+  assert.match(gallerySource, /maxSteadyFrameLoads = supportsIntentPreview \? 3 : 2/);
+  assert.match(gallerySource, /previewRuntimeWarmed \? maxSteadyFrameLoads : 1/);
+  assert.match(gallerySource, /frameQueue\.sort\(compareFramePriority\)/);
+  assert.match(gallerySource, /frame\.dataset\.previewOrder = String\(id\)/);
+  assert.doesNotMatch(gallerySource, /frameQueue\.unshift\(frame\)/);
   assert.match(gallerySource, /framePrefetchMargin = supportsIntentPreview \? "160px 0px" : "120px 0px"/);
   assert.match(gallerySource, /const visibleFrameObserver = new IntersectionObserver/);
   assert.match(gallerySource, /queueFrame\(frame, true\)/);
