@@ -62,10 +62,24 @@ html body #experiment .demo-surface.has-persistent-scene:is(:fullscreen, .is-rec
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
-  /* Four-sided fade reserves HUD space without moving the field. */
+  /* Four-sided fade reserves HUD space without moving the field. The eased
+     vertical ramp reaches the actual viewport edges, so cards never end on a
+     visible hard crop at the first or last pixel row. */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 min(84px, 14%), #000 calc(100% - min(84px, 14%)), transparent),
+    linear-gradient(to bottom,
+      transparent 0%, rgb(0 0 0 / 18%) min(36px, 4%), rgb(0 0 0 / 55%) min(76px, 9%),
+      #000 min(136px, 16%), #000 calc(100% - min(156px, 18%)),
+      rgb(0 0 0 / 55%) calc(100% - min(84px, 10%)),
+      rgb(0 0 0 / 18%) calc(100% - min(36px, 4%)), transparent 100%);
+  -webkit-mask-composite: source-in;
   mask-image:
     linear-gradient(to right, transparent, #000 min(84px, 14%), #000 calc(100% - min(84px, 14%)), transparent),
-    linear-gradient(to bottom, transparent min(48px, 5%), #000 min(120px, 18%), #000 calc(100% - min(144px, 20%)), transparent calc(100% - min(48px, 5%)));
+    linear-gradient(to bottom,
+      transparent 0%, rgb(0 0 0 / 18%) min(36px, 4%), rgb(0 0 0 / 55%) min(76px, 9%),
+      #000 min(136px, 16%), #000 calc(100% - min(156px, 18%)),
+      rgb(0 0 0 / 55%) calc(100% - min(84px, 10%)),
+      rgb(0 0 0 / 18%) calc(100% - min(36px, 4%)), transparent 100%);
   mask-composite: intersect;
 }
 .has-persistent-scene[data-scene-state="gallery"] > .showcase-viewport { cursor: grab; }

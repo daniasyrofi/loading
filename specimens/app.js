@@ -14327,7 +14327,9 @@ function createRecordingBackdropRenderer(surface) {
   const ascii = createAsciiBackdropRenderer(surface);
   let asciiPattern = null;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // A 1.5x ceiling keeps the full-screen fragment shader light enough to run
+  // every refresh on Retina displays without visibly softening its dot grid.
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 
   let frameId = 0;
   let running = false;
@@ -14400,7 +14402,11 @@ function createRecordingBackdropRenderer(surface) {
   const tick = (timestamp) => {
     if (!running || destroyed) return;
     frameId = window.requestAnimationFrame(tick);
-    if (timestamp - lastFrame < 32) return;
+    // Reaction diffusion performs twelve render passes and keeps its 30 fps
+    // budget. Single-pass patterns such as Dither stay smooth at up to 60 fps,
+    // including on high-refresh displays where unrestricted rAF is wasteful.
+    const frameInterval = diffusionActive ? 30 : 14;
+    if (lastFrame && timestamp - lastFrame < frameInterval) return;
     lastFrame = timestamp;
     renderFrame(timestamp);
     if (reducedMotion()) stop();

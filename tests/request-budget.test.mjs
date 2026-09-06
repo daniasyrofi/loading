@@ -124,6 +124,24 @@ test("Cloudflare Web Analytics tracks the public page without counting preview i
   assert.doesNotMatch(specimenHtml, /cloudflareinsights/);
 });
 
+test("fullscreen gallery fades at both viewport edges and keeps Dither smooth", async () => {
+  const [sceneStyles, specimenSource, specimenHtml] = await Promise.all([
+    readProjectFile("specimens/showcase-scene.css"),
+    readProjectFile("specimens/app.js"),
+    readProjectFile("specimens/index.html"),
+  ]);
+
+  assert.match(sceneStyles, /-webkit-mask-image:/);
+  assert.match(sceneStyles, /transparent 0%/);
+  assert.match(sceneStyles, /transparent 100%/);
+  assert.match(sceneStyles, /-webkit-mask-composite: source-in/);
+  assert.match(specimenSource, /setPixelRatio\(Math\.min\(window\.devicePixelRatio \|\| 1, 1\.5\)\)/);
+  assert.match(specimenSource, /const frameInterval = diffusionActive \? 30 : 14/);
+  assert.match(specimenSource, /timestamp - lastFrame < frameInterval/);
+  assert.match(specimenHtml, /showcase-scene\.css\?v=edge-fade-1/);
+  assert.match(specimenHtml, /app\.js\?v=edge-fade-1/);
+});
+
 test("robots policy keeps public search available and rejects common AI crawlers", async () => {
   const robots = await readProjectFile("robots.txt");
 
