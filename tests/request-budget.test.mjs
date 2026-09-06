@@ -103,12 +103,25 @@ test("Cloudflare Pages build is explicit, cache-aware, and safe to index", async
   assert.match(wrangler, /"pages_build_output_dir": "\.\/dist"/);
   assert.match(wrangler, /"name": "loading-daniasyrofi"/);
   assert.match(headers, /Content-Security-Policy: [^\n]*script-src 'self'/);
+  assert.match(headers, /script-src [^;]*https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js/);
+  assert.match(headers, /connect-src [^;]*https:\/\/cloudflareinsights\.com/);
   assert.match(headers, /\/specimens\/\*\n  Cache-Control: public, max-age=86400/);
   assert.match(headers, /\/assets\/fonts\/\*\.woff2\n  Cache-Control: public, max-age=31536000, immutable/);
   assert.match(headers, /https:\/\/:version\.loading-daniasyrofi\.pages\.dev\/\*/);
   assert.match(buildScript, /const files = \[/);
   assert.match(buildScript, /join\(outputDir, "specimens", "tests"\)/);
   assert.doesNotMatch(buildScript, /cp\(projectRoot, outputDir/);
+});
+
+test("Cloudflare Web Analytics tracks the public page without counting preview iframes", async () => {
+  const [galleryHtml, specimenHtml] = await Promise.all([
+    readProjectFile("index.html"),
+    readProjectFile("specimens/index.html"),
+  ]);
+
+  assert.match(galleryHtml, /https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js/);
+  assert.match(galleryHtml, /dfbc74b35df6447285047cfde07bc0c3/);
+  assert.doesNotMatch(specimenHtml, /cloudflareinsights/);
 });
 
 test("robots policy keeps public search available and rejects common AI crawlers", async () => {
