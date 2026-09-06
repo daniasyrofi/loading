@@ -147,14 +147,10 @@
   let activeFrameLoads = 0;
   const frameQueue = [];
   const queuedFrames = new WeakSet();
-  const liveFrames = [];
-  // Keep the burst bounded while the shared browser cache absorbs duplicate
-  // shell/module requests from adjacent previews.
-  const maxConcurrentFrameLoads = 2;
-  const maxLivePreviews = isDraftCollection
-    ? Number.POSITIVE_INFINITY
-    : supportsIntentPreview ? 6 : 3;
-  const framePrefetchMargin = supportsIntentPreview ? "360px 0px" : "420px 0px";
+  // Visible cards take priority. A small concurrency cap keeps a newly opened
+  // page from creating a network burst while the shared cache warms up.
+  const maxConcurrentFrameLoads = supportsIntentPreview ? 3 : 2;
+  const framePrefetchMargin = supportsIntentPreview ? "160px 0px" : "120px 0px";
   const idleFrameMarkup = "<style>html,body{min-height:100%;margin:0;background:black}</style>";
 
   const posterObserver = new IntersectionObserver((entries) => {
@@ -173,32 +169,39 @@
   }
 
   function releaseLiveFrame(frame) {
-    const index = liveFrames.indexOf(frame);
-    if (index >= 0) liveFrames.splice(index, 1);
     frame.closest(".specimen-tile")?.classList.remove("is-live");
     frame.dataset.ready = "false";
     frame.removeAttribute("src");
     frame.srcdoc = idleFrameMarkup;
   }
 
-  function registerLiveFrame(frame) {
-    const existingIndex = liveFrames.indexOf(frame);
-    if (existingIndex >= 0) liveFrames.splice(existingIndex, 1);
-    liveFrames.push(frame);
-    while (liveFrames.length > maxLivePreviews) releaseLiveFrame(liveFrames[0]);
-  }
-
   const frameObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const frame = entry.target;
       frame.dataset.nearby = String(entry.isIntersecting);
-      if (entry.isIntersecting) queueFrame(frame);
-      else if (frame.dataset.loading !== "true" && frame.dataset.ready !== "true") {
-        // A fast scroll should not permanently enqueue every card it crosses.
+      if (entry.isIntersecting) queueFrame(frame, frame.dataset.visible === "true");
+      else {
+        // A fast scroll should not permanently enqueue or retain cards it
+        // crosses. Loaded cards are recycled as soon as they leave the buffer.
         removeQueuedFrame(frame);
+        if (frame.dataset.loading !== "true" && frame.dataset.ready === "true") {
+          releaseLiveFrame(frame);
+        }
       }
     });
   }, { rootMargin: framePrefetchMargin, threshold: 0.01 });
+
+  const visibleFrameObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      const frame = entry.target;
+      frame.dataset.visible = String(entry.isIntersecting);
+      if (!entry.isIntersecting) return;
+      // The viewport wins over prefetch work, even if both observers deliver
+      // their first records in a different order.
+      frame.dataset.nearby = "true";
+      queueFrame(frame, true);
+    });
+  }, { threshold: 0.01 });
 
   function finishFrameLoad(frame) {
     if (frame.dataset.loading === "true") {
@@ -208,7 +211,6 @@
     if (frame.isConnected && frame.dataset.nearby === "true") {
       frame.dataset.ready = "true";
       frame.closest(".specimen-tile")?.classList.add("is-live");
-      registerLiveFrame(frame);
     } else if (frame.isConnected) {
       releaseLiveFrame(frame);
     }
@@ -244,12 +246,16 @@
     }
   }
 
-  function queueFrame(frame) {
+  function queueFrame(frame, prioritize = false) {
     if (!frame || frame.dataset.nearby !== "true"
       || frame.dataset.ready === "true" || frame.dataset.loading === "true") return;
-    if (queuedFrames.has(frame)) return;
+    if (queuedFrames.has(frame)) {
+      if (!prioritize) return;
+      removeQueuedFrame(frame);
+    }
     queuedFrames.add(frame);
-    frameQueue.push(frame);
+    if (prioritize) frameQueue.unshift(frame);
+    else frameQueue.push(frame);
     pumpFrameQueue();
   }
 
@@ -326,8 +332,8 @@
         poster.remove();
       }
 
-      // Visible and near-viewport cards start without hover. The cap retains
-      // six desktop previews or three touch previews while recycling old ones.
+      // Every visible card starts without hover. Nearby cards warm the cache,
+      // and cards outside that small buffer are released again.
       const autoPreview = isDraftCollection || !reducedMotion;
       frame.dataset.autoPreview = String(autoPreview);
       if (!autoPreview && supportsIntentPreview && !reducedMotion) {
@@ -353,8 +359,10 @@
     });
 
     grid.replaceChildren(fragment);
-    grid.querySelectorAll('.specimen-frame[data-auto-preview="true"]')
-      .forEach((frame) => frameObserver.observe(frame));
+    grid.querySelectorAll('.specimen-frame[data-auto-preview="true"]').forEach((frame) => {
+      frameObserver.observe(frame);
+      visibleFrameObserver.observe(frame);
+    });
   }
 
   render();

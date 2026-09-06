@@ -20,7 +20,7 @@ test("collection previews share one cacheable iframe document URL", async () => 
   assert.match(specimenSource, /window\.location\.hash\.slice\(1\)/);
 });
 
-test("public live previews stay viewport-bound and resource-capped", async () => {
+test("public live previews prioritize every visible card and recycle offscreen work", async () => {
   const [galleryHtml, gallerySource] = await Promise.all([
     readProjectFile("index.html"),
     readProjectFile("app.js"),
@@ -33,9 +33,12 @@ test("public live previews stay viewport-bound and resource-capped", async () =>
   assert.match(gallerySource, /posterObserver\.observe\(poster\)/);
   assert.match(gallerySource, /supportsIntentPreview && !reducedMotion/);
   assert.match(gallerySource, /const autoPreview = isDraftCollection \|\| !reducedMotion/);
-  assert.match(gallerySource, /supportsIntentPreview \? 6 : 3/);
-  assert.match(gallerySource, /framePrefetchMargin = supportsIntentPreview \? "360px 0px" : "420px 0px"/);
-  assert.match(gallerySource, /while \(liveFrames\.length > maxLivePreviews\) releaseLiveFrame/);
+  assert.match(gallerySource, /maxConcurrentFrameLoads = supportsIntentPreview \? 3 : 2/);
+  assert.match(gallerySource, /framePrefetchMargin = supportsIntentPreview \? "160px 0px" : "120px 0px"/);
+  assert.match(gallerySource, /const visibleFrameObserver = new IntersectionObserver/);
+  assert.match(gallerySource, /queueFrame\(frame, true\)/);
+  assert.match(gallerySource, /frame\.dataset\.ready === "true"\) \{\n          releaseLiveFrame\(frame\)/);
+  assert.doesNotMatch(gallerySource, /maxLivePreviews/);
   assert.match(gallerySource, /import\("\.\/playground\.js"\)/);
   assert.match(gallerySource, /stylesheet\.href = "\.\/playground\.css"/);
   assert.match(gallerySource, /data-auto-preview="true"/);

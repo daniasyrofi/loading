@@ -51,4 +51,5 @@ This rebuilds `dist/` and serves it through the Cloudflare Pages emulator.
 Use a zone-level WAF rate-limiting rule for obvious abusive clients. Start in
 log/challenge mode rather than blocking legitimate visitors. Static assets are
 already browser-cacheable through `_headers`, and live home previews are capped
-in the client so a single visit does not start every animation at once.
+to the viewport plus a small prefetch buffer, so a single visit does not start
+every animation at once.
