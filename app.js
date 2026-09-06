@@ -134,6 +134,11 @@
 
   const isDraftCollection = document.documentElement.dataset.collection === "draft";
   const specimens = isDraftCollection ? draftSpecimens : publicSpecimens;
+  const posterSpecimenIds = new Set([
+    "02", "05", "06", "18", "20", "23", "26", "29", "34", "47", "49", "51",
+    "56", "60", "64", "70", "75", "76", "79", "85", "148", "213", "284"
+  ]);
+  const supportsIntentPreview = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   const grid = document.querySelector("[data-specimen-grid]");
   const template = document.querySelector("[data-specimen-template]");
@@ -142,24 +147,70 @@
   let activeFrameLoads = 0;
   const frameQueue = [];
   const queuedFrames = new WeakSet();
+  const liveFrames = [];
+  // Keep the burst bounded while the shared browser cache absorbs duplicate
+  // shell/module requests from adjacent previews.
   const maxConcurrentFrameLoads = 2;
+  const maxLivePreviews = isDraftCollection
+    ? Number.POSITIVE_INFINITY
+    : supportsIntentPreview ? 6 : 3;
+  const framePrefetchMargin = supportsIntentPreview ? "360px 0px" : "420px 0px";
+  const idleFrameMarkup = "<style>html,body{min-height:100%;margin:0;background:black}</style>";
+
+  const posterObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      const poster = entry.target;
+      posterObserver.unobserve(poster);
+      if (poster.dataset.src) poster.src = poster.dataset.src;
+    });
+  }, { rootMargin: "160px 0px", threshold: 0.01 });
+
+  function removeQueuedFrame(frame) {
+    const index = frameQueue.indexOf(frame);
+    if (index >= 0) frameQueue.splice(index, 1);
+    queuedFrames.delete(frame);
+  }
+
+  function releaseLiveFrame(frame) {
+    const index = liveFrames.indexOf(frame);
+    if (index >= 0) liveFrames.splice(index, 1);
+    frame.closest(".specimen-tile")?.classList.remove("is-live");
+    frame.dataset.ready = "false";
+    frame.removeAttribute("src");
+    frame.srcdoc = idleFrameMarkup;
+  }
+
+  function registerLiveFrame(frame) {
+    const existingIndex = liveFrames.indexOf(frame);
+    if (existingIndex >= 0) liveFrames.splice(existingIndex, 1);
+    liveFrames.push(frame);
+    while (liveFrames.length > maxLivePreviews) releaseLiveFrame(liveFrames[0]);
+  }
 
   const frameObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      frameObserver.unobserve(entry.target);
-      queueFrame(entry.target);
+      const frame = entry.target;
+      frame.dataset.nearby = String(entry.isIntersecting);
+      if (entry.isIntersecting) queueFrame(frame);
+      else if (frame.dataset.loading !== "true" && frame.dataset.ready !== "true") {
+        // A fast scroll should not permanently enqueue every card it crosses.
+        removeQueuedFrame(frame);
+      }
     });
-  }, { rootMargin: "160px 0px", threshold: 0.01 });
+  }, { rootMargin: framePrefetchMargin, threshold: 0.01 });
 
   function finishFrameLoad(frame) {
     if (frame.dataset.loading === "true") {
       frame.dataset.loading = "false";
       activeFrameLoads = Math.max(0, activeFrameLoads - 1);
     }
-    if (frame.isConnected) {
+    if (frame.isConnected && frame.dataset.nearby === "true") {
       frame.dataset.ready = "true";
       frame.closest(".specimen-tile")?.classList.add("is-live");
+      registerLiveFrame(frame);
+    } else if (frame.isConnected) {
+      releaseLiveFrame(frame);
     }
     pumpFrameQueue();
   }
@@ -169,7 +220,9 @@
     try {
       const currentUrl = new URL(frame.contentWindow.location.href);
       const targetUrl = new URL(frame.dataset.src);
-      loadedTarget = currentUrl.pathname === targetUrl.pathname && currentUrl.search === targetUrl.search;
+      loadedTarget = currentUrl.pathname === targetUrl.pathname
+        && currentUrl.search === targetUrl.search
+        && currentUrl.hash === targetUrl.hash;
     } catch {
       loadedTarget = false;
     }
@@ -180,7 +233,9 @@
   function pumpFrameQueue() {
     while (activeFrameLoads < maxConcurrentFrameLoads && frameQueue.length) {
       const frame = frameQueue.shift();
-      if (!frame?.isConnected || frame.dataset.loading === "true" || frame.dataset.ready === "true") continue;
+      if (frame) queuedFrames.delete(frame);
+      if (!frame?.isConnected || frame.dataset.nearby !== "true"
+        || frame.dataset.loading === "true" || frame.dataset.ready === "true") continue;
       frame.dataset.loading = "true";
       activeFrameLoads += 1;
       frame.addEventListener("load", () => handleFrameLoad(frame), { once: true });
@@ -190,7 +245,8 @@
   }
 
   function queueFrame(frame) {
-    if (!frame || frame.dataset.ready === "true" || frame.dataset.loading === "true") return;
+    if (!frame || frame.dataset.nearby !== "true"
+      || frame.dataset.ready === "true" || frame.dataset.loading === "true") return;
     if (queuedFrames.has(frame)) return;
     queuedFrames.add(frame);
     frameQueue.push(frame);
@@ -212,10 +268,16 @@
     detailUrl.searchParams.set("return", isDraftCollection ? "draft" : "public");
     if (reducedMotion) detailUrl.searchParams.set("motion", "reduce");
 
-    const previewUrl = new URL(detailUrl.href);
-    previewUrl.searchParams.delete("detail");
-    previewUrl.searchParams.delete("return");
-    previewUrl.searchParams.set("embedded", "true");
+    // Fragments are not sent to the server. All cards therefore request the
+    // same /specimens/ document and share one browser-cache entry, while the
+    // iframe still receives its own specimen parameters client-side.
+    const previewParams = new URLSearchParams(detailUrl.search);
+    previewParams.delete("detail");
+    previewParams.delete("return");
+    previewParams.set("embedded", "true");
+    previewParams.set("collection-preview", "true");
+    const previewUrl = new URL(detailRoot(), window.location.href);
+    previewUrl.hash = previewParams.toString();
     return { detailUrl, previewUrl };
   }
 
@@ -230,6 +292,7 @@
       const tile = node.querySelector(".specimen-tile");
       const link = node.querySelector(".tile-link");
       const name = node.querySelector(".tile-name");
+      const poster = node.querySelector(".specimen-poster");
       const frame = node.querySelector(".specimen-frame");
       const { detailUrl, previewUrl } = specimenUrls(id, display);
 
@@ -251,12 +314,80 @@
       frame.title = `${title} live loading preview`;
       frame.dataset.src = previewUrl.href;
 
+      // Public collection traffic gets a tiny static preview first. Loading
+      // the full specimen runtime is reserved for deliberate mouse/keyboard
+      // interaction, so crawlers and passive visitors never download it.
+      const hasPoster = !isDraftCollection && posterSpecimenIds.has(id);
+      if (hasPoster) {
+        poster.dataset.src = `./posters/specimen-${id}.webp`;
+        poster.addEventListener("error", () => poster.remove(), { once: true });
+        posterObserver.observe(poster);
+      } else {
+        poster.remove();
+      }
+
+      // Visible and near-viewport cards start without hover. The cap retains
+      // six desktop previews or three touch previews while recycling old ones.
+      const autoPreview = isDraftCollection || !reducedMotion;
+      frame.dataset.autoPreview = String(autoPreview);
+      if (!autoPreview && supportsIntentPreview && !reducedMotion) {
+        let intentTimer = 0;
+        const cancelIntent = () => {
+          window.clearTimeout(intentTimer);
+          intentTimer = 0;
+        };
+        const requestLivePreview = () => {
+          cancelIntent();
+          intentTimer = window.setTimeout(() => {
+            frame.dataset.nearby = "true";
+            queueFrame(frame);
+          }, 180);
+        };
+        link.addEventListener("pointerenter", requestLivePreview);
+        link.addEventListener("pointerleave", cancelIntent);
+        link.addEventListener("focus", requestLivePreview);
+        link.addEventListener("blur", cancelIntent);
+      }
+
       fragment.append(node);
     });
 
     grid.replaceChildren(fragment);
-    grid.querySelectorAll(".specimen-frame").forEach((frame) => frameObserver.observe(frame));
+    grid.querySelectorAll('.specimen-frame[data-auto-preview="true"]')
+      .forEach((frame) => frameObserver.observe(frame));
   }
 
   render();
+
+  // The playground sits below the collection. Its module and web component
+  // are fetched only when a visitor is close enough to use them.
+  const playground = document.querySelector("#playground");
+  if (playground) {
+    let playgroundLoaded = false;
+    const loadPlayground = () => {
+      if (playgroundLoaded) return;
+      playgroundLoaded = true;
+      if (!document.querySelector('link[data-playground-styles]')) {
+        const stylesheet = document.createElement("link");
+        stylesheet.rel = "stylesheet";
+        stylesheet.href = "./playground.css";
+        stylesheet.dataset.playgroundStyles = "true";
+        document.head.append(stylesheet);
+      }
+      import("./playground.js").catch((error) => {
+        playgroundLoaded = false;
+        console.error("Unable to load playground", error);
+      });
+    };
+    if ("IntersectionObserver" in window) {
+      const playgroundObserver = new IntersectionObserver(([entry]) => {
+        if (!entry.isIntersecting) return;
+        playgroundObserver.disconnect();
+        loadPlayground();
+      }, { rootMargin: "320px 0px" });
+      playgroundObserver.observe(playground);
+    } else {
+      loadPlayground();
+    }
+  }
 })();

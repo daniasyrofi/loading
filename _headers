@@ -1,0 +1,74 @@
+# Cloudflare Pages combines matching rules, so security can be declared once.
+/*
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'; form-action 'self'; media-src 'self'; manifest-src 'self'; worker-src 'none'; upgrade-insecure-requests
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=(), fullscreen=(self)
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  X-Permitted-Cross-Domain-Policies: none
+  Cross-Origin-Opener-Policy: same-origin
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+/
+  Cache-Control: public, max-age=60, stale-while-revalidate=300
+
+/index.html
+  Cache-Control: public, max-age=60, stale-while-revalidate=300
+
+/draft/*
+  Cache-Control: public, max-age=60, stale-while-revalidate=300
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/app.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/styles.css
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/playground.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/playground.css
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/indicator.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/specimens/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/catalog.json
+  Cache-Control: public, max-age=300
+
+/registry.json
+  Cache-Control: public, max-age=300, s-maxage=3600
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, OPTIONS
+
+/r/*
+  Cache-Control: public, max-age=300
+  Access-Control-Allow-Origin: *
+
+/assets/fonts/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/fonts/*.css
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/assets/*.png
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+
+/assets/*.svg
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+
+/posters/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+
+/robots.txt
+  Cache-Control: public, max-age=86400
+
+https://loading-daniasyrofi.pages.dev/*
+  X-Robots-Tag: noindex
+
+https://:version.loading-daniasyrofi.pages.dev/*
+  X-Robots-Tag: noindex

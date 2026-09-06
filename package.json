@@ -12,6 +12,10 @@
   "scripts": {
     "dev": "serve . -l tcp://127.0.0.1:3000",
     "start": "serve . -l tcp://127.0.0.1:3000",
+    "build": "node scripts/build-site.mjs",
+    "preview:cloudflare": "npm run build && wrangler pages dev",
+    "deploy:cloudflare": "npm run build && wrangler pages deploy",
+    "test": "node --test specimens/tests/*.test.mjs tests/*.test.mjs",
     "validate": "node scripts/validate-specimens.mjs",
     "benchmark": "node scripts/benchmark-loaders.mjs"
   },
@@ -24,5 +28,9 @@
     "webgl",
     "canvas2d",
     "svg-animation"
-  ]
+  ],
+  "devDependencies": {
+    "serve": "^14.2.6",
+    "wrangler": "^4.129.0"
+  }
 }

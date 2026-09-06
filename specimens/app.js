@@ -14987,7 +14987,7 @@ function createRecordingToolbar({ surface, title }) {
   });
   themeDropdown.dataset.recordingDropdown = "theme";
 
-  const isDraftWorkbench = new URLSearchParams(window.location.search).get("gallery") === "draft"
+  const isDraftWorkbench = requestedGallery === "draft"
     || window.location.pathname.includes("/draft");
   const activePatternGroups = isDraftWorkbench ? RECORDING_PATTERN_ARCHIVE : RECORDING_PATTERN_GROUPS;
   const patternGroups = surface.dataset.recordingPattern === "frost"
@@ -15612,6 +15612,9 @@ function ReasoningTrace({
 }
 
 const experimentParams = new URLSearchParams(window.location.search);
+for (const [key, value] of new URLSearchParams(window.location.hash.slice(1))) {
+  experimentParams.set(key, value);
+}
 const requestedTheme = experimentParams.get("theme");
 const requestedMotion = experimentParams.get("motion");
 const requestedElapsed = Number(experimentParams.get("elapsed") || 0);
@@ -15624,6 +15627,7 @@ const requestedResolveDuration = Number(experimentParams.get("resolveDuration") 
 const requestedCountDuration = Number(experimentParams.get("countDuration") || 3200);
 const requestedCopyFailure = experimentParams.get("copyFailure") === "true";
 const requestedEmbedded = experimentParams.get("embedded") === "true";
+const requestedCollectionPreview = experimentParams.get("collection-preview") === "true";
 const requestedImmersive = experimentParams.get("immersive") === "true";
 const requestedDetail = experimentParams.get("detail") === "true";
 const requestedReturn = experimentParams.get("return") || "public";
@@ -17263,12 +17267,21 @@ const allSpecimenRoots = [
   ...compactLoadingSpecimens.map(({ specimen }) => specimen.root)
 ];
 
+// Collection thumbnails already carry the selected ID and never expose the
+// detail/gallery chrome. They do not need a catalog request or a 24-card scene.
+const collectionPreviewIds = requestedGallery === "draft"
+  ? DRAFT_SHOWCASE_SPECIMEN_IDS
+  : PUBLIC_SHOWCASE_SPECIMEN_IDS;
+const isCollectionPreview = requestedCollectionPreview && requestedEmbedded && requestedSpecimen
+  && collectionPreviewIds.has(requestedSpecimen) && !requestedImmersive && !requestedDetail;
 const catalogUrl = new URL("../catalog.json", window.location.href);
-const catalog = await fetch(catalogUrl.href, { cache: "no-store" }).then((response) => {
+const catalog = isCollectionPreview ? null : await fetch(catalogUrl.href).then((response) => {
   if (!response.ok) throw new Error(`Unable to load experiment catalog (${response.status})`);
   return response.json();
 });
-const publicIds = new Set(catalog.experiments.map((item) => item.id));
+const publicIds = catalog
+  ? new Set(catalog.experiments.map((item) => item.id))
+  : PUBLIC_SHOWCASE_SPECIMEN_IDS;
 const isLocalPreview = new Set(["localhost", "127.0.0.1", "::1"]).has(window.location.hostname);
 const allowedIds = isLocalPreview || requestedGallery === "draft"
   ? new Set(allSpecimenRoots.map((root) => root.id.replace("specimen-", "")))
@@ -17276,7 +17289,9 @@ const allowedIds = isLocalPreview || requestedGallery === "draft"
     ? new Set([...publicIds, requestedSpecimen].filter(Boolean))
     : publicIds;
 const rootById = new Map(allSpecimenRoots.map((root) => [root.id.replace("specimen-", ""), root]));
-const orderedPublicRoots = catalog.experiments.map((item) => rootById.get(item.id)).filter(Boolean);
+const orderedPublicRoots = catalog
+  ? catalog.experiments.map((item) => rootById.get(item.id)).filter(Boolean)
+  : allSpecimenRoots.filter((root) => publicIds.has(root.id.replace("specimen-", "")));
 const draftRoots = allSpecimenRoots.filter((root) => !publicIds.has(root.id.replace("specimen-", "")));
 const visibleRoots = requestedSpecimen
   ? allSpecimenRoots.filter((root) => root.id === `specimen-${requestedSpecimen}` && allowedIds.has(requestedSpecimen))
@@ -17285,7 +17300,7 @@ const visibleRoots = requestedSpecimen
     : isLocalPreview
       ? [...orderedPublicRoots, ...draftRoots]
       : orderedPublicRoots;
-const requestedCatalogItem = requestedSpecimen
+const requestedCatalogItem = requestedSpecimen && catalog
   ? catalog.experiments.find((item) => item.id === requestedSpecimen)
   : null;
 
@@ -17411,7 +17426,7 @@ window.addEventListener("message", (event) => {
     surface.querySelector('[data-recording-dropdown="pattern"]')?.setRecordingValue?.(payload.pattern);
   } else if (type === "experiment:next-pattern") {
     const current = surface.dataset.recordingPattern || "dither";
-    const isDraft = new URLSearchParams(window.location.search).get("gallery") === "draft"
+    const isDraft = requestedGallery === "draft"
       || window.location.pathname.includes("/draft");
     const groups = isDraft ? RECORDING_PATTERN_ARCHIVE : RECORDING_PATTERN_GROUPS;
     const allPatterns = groups.flatMap(([, opts]) => opts.map(([p]) => p));

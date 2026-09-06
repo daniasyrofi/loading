@@ -4,12 +4,13 @@
 
 import http from "node:http";
 import { readFile, stat } from "node:fs/promises";
-import { resolve, extname, join, dirname } from "node:path";
+import { resolve, extname, join, dirname, relative, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname);
 const PORT = process.env.PORT || 3000;
+const HOST = "127.0.0.1";
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -34,6 +35,13 @@ const server = http.createServer(async (req, res) => {
 
     const relativePath = pathname.replace(/^\/+/, "");
     const filePath = resolve(rootDir, relativePath);
+    const resolvedRelativePath = relative(rootDir, filePath);
+
+    if (resolvedRelativePath.startsWith("..") || isAbsolute(resolvedRelativePath)) {
+      res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("403 Forbidden");
+      return;
+    }
 
     try {
       const stats = await stat(filePath);
@@ -67,9 +75,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, "0.0.0.0", () => {
+server.listen(PORT, HOST, () => {
   console.log(`\n✨ Loading Showcase Local Server is live!`);
-  console.log(`   ➜ Local:   http://localhost:${PORT}`);
-  console.log(`   ➜ Network: http://127.0.0.1:${PORT}`);
+  console.log(`   ➜ Local: http://${HOST}:${PORT}`);
   console.log(`   ➜ Press Ctrl+C to stop.\n`);
 });

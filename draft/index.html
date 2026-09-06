@@ -8,9 +8,7 @@
   <title>Loading Drafts</title>
   <meta name="description" content="Loading animation studies still in progress." />
   <link rel="preload" href="../assets/fonts/gentium-plus-latin-regular.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="../assets/fonts/gentium-plus.css" />
   <link rel="preload" href="../assets/fonts/plus-jakarta-sans-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="../assets/fonts/plus-jakarta-sans.css" />
   <link rel="icon" type="image/svg+xml" sizes="any" href="../assets/favicon.svg?v=2" />
   <link rel="stylesheet" href="../styles.css" />
 </head>
@@ -47,6 +45,8 @@
 
   <template data-specimen-template>
     <article class="specimen-tile">
+      <div class="specimen-placeholder" aria-hidden="true"><span></span><span></span><span></span></div>
+      <img class="specimen-poster" alt="" width="1120" height="600" loading="lazy" decoding="async" fetchpriority="low" />
       <iframe class="specimen-frame" title="" loading="eager" tabindex="-1" aria-hidden="true" inert srcdoc="<style>html,body{min-height:100%;margin:0;background:black}</style>"></iframe>
       <a class="tile-link" href="../specimens/">
         <span class="tile-name"></span>
